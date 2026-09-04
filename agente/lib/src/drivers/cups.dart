@@ -62,8 +62,16 @@ class DriverCups implements Driver {
           (i) => ImpresoraLocal(
             sistema: i.sistema,
             nombre: i.nombre,
+            // Se traduce otra vez sobre el texto CRUDO más el motivo, no
+            // sobre el estado ya traducido: `_traduce` entiende lo que dice
+            // `lpstat`, no lo que devuelve ella misma. Pasarle su propia
+            // salida dejaba en «desconocida» a toda impresora que tuviera una
+            // línea de motivo.
             estado: motivos.containsKey(i.sistema)
-                ? _traduce('${motivos[i.sistema]!.toLowerCase()} ${i.estado}')
+                ? _traduce(
+                    '${motivos[i.sistema]!.toLowerCase()} '
+                    '${crudos[i.sistema]?.toLowerCase() ?? ''}',
+                  )
                 : i.estado,
             detalle: motivos[i.sistema] ??
                 (i.estado == Estado.lista ? '' : crudos[i.sistema] ?? ''),

@@ -34,6 +34,11 @@ class ConfigAgente {
   int puertoPanel;
   String salidaFalsa;
 
+  /// True si el archivo existe pero este usuario no puede leerlo. Distingue
+  /// «sin configurar» de «configurado, pero hace falta sudo», que son dos
+  /// consejos distintos.
+  bool ilegible = false;
+
   bool get configurado => hub.isNotEmpty && credencial.isNotEmpty;
 
   /// URL del WebSocket a partir de la del hub: http→ws, https→wss.
@@ -63,10 +68,23 @@ class ConfigAgente {
     return '/etc/chalona-print/agente.json';
   }
 
+  /// Lee la configuración. Si no se puede —no existe, o no hay permiso—
+  /// devuelve una vacía en vez de reventar.
+  ///
+  /// El archivo es del root porque lleva la credencial del agente. Un técnico
+  /// que corra `chalona-print-agente impresoras` sin sudo no necesita esa
+  /// credencial para nada, y merece la lista de impresoras y no un volcado de
+  /// pila. Los comandos que sí la necesitan avisan de que hace falta sudo.
   static ConfigAgente carga([String? ruta]) {
     final f = File(ruta ?? rutaPorDefecto());
-    if (!f.existsSync()) return ConfigAgente();
-    final d = jsonDecode(f.readAsStringSync());
+    final String texto;
+    try {
+      if (!f.existsSync()) return ConfigAgente();
+      texto = f.readAsStringSync();
+    } on FileSystemException {
+      return ConfigAgente()..ilegible = true;
+    }
+    final d = jsonDecode(texto);
     if (d is! Map) return ConfigAgente();
     return ConfigAgente(
       hub: d['hub']?.toString() ?? '',

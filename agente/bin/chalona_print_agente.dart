@@ -114,6 +114,14 @@ Future<void> _configurar(Map<String, String> o) async {
 /// El modo de trabajo: panel local + WebSocket con el hub, hasta que lo paren.
 Future<void> _correr() async {
   final config = ConfigAgente.carga();
+  if (config.ilegible) {
+    stderr.writeln(
+      'No puedo leer la configuración (${ConfigAgente.rutaPorDefecto()}). '
+      'Lleva la credencial del agente, así que es del root: usa sudo.',
+    );
+    exitCode = 77; // EX_NOPERM
+    return;
+  }
   if (!config.configurado) {
     stderr.writeln(
       'Esta computadora no está conectada a ningún hub. '
