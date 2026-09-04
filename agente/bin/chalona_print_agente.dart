@@ -165,10 +165,14 @@ Future<void> _impresoras() async {
     return;
   }
   for (final i in lista) {
-    final marca = i.predeterminada ? ' *' : '';
+    final identidad = [
+      if (i.fabricante.isNotEmpty) i.fabricante,
+      if (i.conexion.isNotEmpty) i.conexion.toUpperCase(),
+      if (i.serie.isNotEmpty) 'serie ${i.serie}',
+    ].join(' · ');
     stdout.writeln(
-      '${i.sistema.padRight(28)} ${i.estado.padRight(12)} '
-      '${i.formatos.join(",")}$marca ${i.detalle}',
+      '${i.sistema.padRight(28)} ${i.estado.padRight(10)} '
+      '${identidad.padRight(34)}${i.predeterminada ? '*' : ' '} ${i.detalle}',
     );
   }
 }

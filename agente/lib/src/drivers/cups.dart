@@ -17,6 +17,7 @@ class DriverCups implements Driver {
     final estado = await _corre('lpstat', ['-p']);
     if (estado == null) return const [];
     final predeterminada = _predeterminada(await _corre('lpstat', ['-d']));
+    final dispositivos = _dispositivos(await _corre('lpstat', ['-v']));
 
     // `lpstat -p` escribe una línea por impresora y, cuando algo va mal, una
     // segunda línea sangrada con el motivo («Unplugged or turned off»). Esa
@@ -49,6 +50,10 @@ class DriverCups implements Driver {
           // CUPS acepta los cuatro: `-o raw` pasa los bytes tal cual y sin esa
           // opción sus filtros se encargan del PDF y de las imágenes.
           formatos: const ['raw', 'pdf', 'imagen', 'texto'],
+          fabricante: dispositivos[sistema]?.fabricante ?? '',
+          modelo: dispositivos[sistema]?.modelo ?? '',
+          conexion: dispositivos[sistema]?.conexion ?? '',
+          serie: dispositivos[sistema]?.serie ?? '',
         ),
       );
     }
@@ -78,6 +83,10 @@ class DriverCups implements Driver {
             cola: i.cola,
             predeterminada: i.predeterminada,
             formatos: i.formatos,
+            fabricante: i.fabricante,
+            modelo: i.modelo,
+            conexion: i.conexion,
+            serie: i.serie,
           ),
         )
         .toList();
@@ -133,6 +142,25 @@ class DriverCups implements Driver {
     return Estado.desconocida;
   }
 
+  /// Lee `lpstat -v`, que da el URI del dispositivo de cada cola:
+  ///
+  ///     device for PC42t-203-ESim: usb://Honeywell/PC42t-203-ESim?serial=16207B3617
+  ///
+  /// Ahí está lo que identifica la impresora de verdad. Se prefiere a
+  /// `printer-make-and-model`, que sale del PPD y miente en cuanto alguien
+  /// instala la cola con un driver genérico: en esta misma máquina, una
+  /// Honeywell aparece como «HP».
+  Map<String, _Dispositivo> _dispositivos(String? salida) {
+    final mapa = <String, _Dispositivo>{};
+    if (salida == null) return mapa;
+    for (final linea in salida.split('\n')) {
+      final m = RegExp(r'^device for ([^:]+): (.+)$').firstMatch(linea.trim());
+      if (m == null) continue;
+      mapa[m.group(1)!] = _Dispositivo.desdeUri(m.group(2)!.trim());
+    }
+    return mapa;
+  }
+
   String? _predeterminada(String? salida) {
     if (salida == null) return null;
     final m = RegExp(r'destination:\s*(\S+)').firstMatch(salida);
@@ -154,5 +182,53 @@ class DriverCups implements Driver {
     } on ProcessException {
       return null;
     }
+  }
+}
+
+/// Lo que se saca del URI del dispositivo de CUPS.
+class _Dispositivo {
+  const _Dispositivo({
+    this.fabricante = '',
+    this.modelo = '',
+    this.conexion = 'otro',
+    this.serie = '',
+  });
+
+  final String fabricante;
+  final String modelo;
+  final String conexion;
+  final String serie;
+
+  factory _Dispositivo.desdeUri(String uri) {
+    final u = Uri.tryParse(uri);
+    if (u == null) return const _Dispositivo();
+    final esquema = u.scheme.toLowerCase();
+
+    // `usb://Fabricante/Modelo?serial=…`, leído del texto crudo y no con
+    // `Uri.host`: el host de una URI se normaliza a minúsculas, y «Zebra
+    // Technologies» convertido en «zebra technologies» ya no es el nombre que
+    // trae la etiqueta del aparato.
+    if (esquema == 'usb') {
+      final m = RegExp(r'^usb://([^/]+)/([^?]*)').firstMatch(uri);
+      return _Dispositivo(
+        fabricante: m == null ? '' : Uri.decodeComponent(m.group(1)!),
+        modelo: m == null ? '' : Uri.decodeComponent(m.group(2)!),
+        conexion: 'usb',
+        serie: u.queryParameters['serial'] ?? '',
+      );
+    }
+    // Red. En `socket://192.168.1.40` el host es la dirección de la impresora
+    // y sirve para reconocerla; en `implicitclass://Canon_MF450/` y en `dnssd`
+    // el host es el nombre de la propia cola, así que repetirlo solo añade
+    // ruido a una línea que existe para aclarar.
+    const directas = ['socket', 'ipp', 'ipps', 'lpd', 'http', 'https'];
+    const internas = ['dnssd', 'implicitclass'];
+    if (directas.contains(esquema)) {
+      return _Dispositivo(conexion: 'red', modelo: u.host);
+    }
+    if (internas.contains(esquema)) {
+      return const _Dispositivo(conexion: 'red');
+    }
+    return _Dispositivo(conexion: esquema == 'file' ? 'archivo' : 'otro');
   }
 }

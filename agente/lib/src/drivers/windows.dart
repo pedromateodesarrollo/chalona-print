@@ -39,6 +39,9 @@ class DriverWindows implements Driver {
             cola: i.trabajos,
             predeterminada: i.nombre == predeterminada,
             formatos: _formatos,
+            modelo: i.driver,
+            conexion: _conexion(i.puerto),
+            serie: i.puerto,
           ),
         )
         .toList();
@@ -68,6 +71,22 @@ class DriverWindows implements Driver {
       );
     }
     await pdf.imprime(t);
+  }
+
+  /// Windows no da el URI del dispositivo, pero el nombre del puerto basta:
+  /// `USB001` es un cable, `IP_192.168.1.40` o `WSD-…` es la red, y `nul:` o
+  /// `FILE:` no son una impresora que nadie vaya a reconocer en un pasillo.
+  String _conexion(String puerto) {
+    final p = puerto.toUpperCase();
+    if (p.startsWith('USB')) return 'usb';
+    if (p.startsWith('IP_') || p.startsWith('WSD') || p.contains(':') && p.contains('.')) {
+      return 'red';
+    }
+    if (p.startsWith('LPT') || p.startsWith('COM')) return 'puerto';
+    if (p.startsWith('FILE') || p.startsWith('NUL') || p.contains('PORTPROMPT')) {
+      return 'archivo';
+    }
+    return 'otro';
   }
 
   String _estado(ImpresoraWin i) {

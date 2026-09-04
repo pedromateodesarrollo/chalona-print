@@ -236,15 +236,20 @@ class HubAgentes {
       await bd.ejecuta(
         '''insert into print.impresora
              (org, agente, dominio, sistema, nombre, estado, detalle, cola,
-              predeterminada, formatos, visto)
-           values (@org, @ag, @dom, @sis, @nom, @est, @det, @cola, @pred, @fmt, now())
+              predeterminada, formatos, visto, fabricante, modelo, conexion, serie)
+           values (@org, @ag, @dom, @sis, @nom, @est, @det, @cola, @pred, @fmt, now(),
+                   @fab, @mod, @con, @ser)
            on conflict (agente, sistema) do update set
-             estado   = excluded.estado,
-             detalle  = excluded.detalle,
-             cola     = excluded.cola,
-             formatos = excluded.formatos,
-             dominio  = excluded.dominio,
-             visto    = now()''',
+             estado     = excluded.estado,
+             detalle    = excluded.detalle,
+             cola       = excluded.cola,
+             formatos   = excluded.formatos,
+             dominio    = excluded.dominio,
+             fabricante = excluded.fabricante,
+             modelo     = excluded.modelo,
+             conexion   = excluded.conexion,
+             serie      = excluded.serie,
+             visto      = now()''',
         {
           'org': org,
           'ag': agente,
@@ -260,6 +265,10 @@ class HubAgentes {
           'fmt': ((c['formatos'] as List?) ?? const ['raw'])
               .map((f) => f.toString())
               .toList(),
+          'fab': c['fabricante']?.toString() ?? '',
+          'mod': c['modelo']?.toString() ?? '',
+          'con': c['conexion']?.toString() ?? '',
+          'ser': c['serie']?.toString() ?? '',
         },
       );
     }

@@ -11,7 +11,8 @@ void registraRutasImpresoras(Servidor s, HubAgentes hub) {
     final agente = int.tryParse(p.consulta['agente'] ?? '');
     final r = await p.bd.filas(
       '''select i.id, i.nombre, i.sistema, i.estado, i.detalle, i.cola,
-                i.predeterminada, i.formatos, i.visto,
+                i.predeterminada, i.formatos, i.visto, i.creado,
+                i.fabricante, i.modelo, i.conexion, i.serie,
                 i.agente, a.nombre as agente_nombre, a.conectado as agente_conectado,
                 i.dominio, d.nombre as dominio_nombre
            from print.impresora i

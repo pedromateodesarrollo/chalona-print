@@ -6,6 +6,8 @@ const impresoras = ref([])
 const error = ref('')
 const editando = ref(null)
 const nombreNuevo = ref('')
+const probando = ref(null)
+const mensaje = ref('')
 let temporizador
 
 const textos = {
@@ -20,6 +22,22 @@ const textos = {
 }
 const color = (e) =>
   e === 'lista' ? 'ok' : ['error', 'sin_papel', 'ausente', 'sin_agente'].includes(e) ? 'mal' : 'tibio'
+
+const conexiones = { usb: 'USB', red: 'Red', puerto: 'Puerto serie', archivo: 'Archivo' }
+
+/// Lo que permite reconocerla sin saberse el nombre de la cola.
+function identidad(i) {
+  return [
+    [i.fabricante, i.modelo].filter(Boolean).join(' '),
+    conexiones[i.conexion] || '',
+    i.serie ? `serie ${i.serie}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
+
+/// Recién aparecida: es la que alguien acaba de enchufar y está buscando.
+const esNueva = (i) => Date.now() - new Date(i.creado).getTime() < 30 * 60 * 1000
 
 async function carga() {
   try {
@@ -36,8 +54,26 @@ async function renombra(i) {
   await carga()
 }
 
-// Se refresca solo: el estado de una impresora cambia cuando alguien echa papel
-// al otro lado, no cuando aquí se pulsa un botón.
+/// Imprimir es la única forma de saber cuál de las cinco es la de enfrente.
+async function prueba(i) {
+  probando.value = i.id
+  mensaje.value = ''
+  try {
+    const t = await api.post('/v1/trabajos', {
+      impresora: i.id,
+      texto: `chalona-print\n${i.nombre}\n${new Date().toLocaleString()}\n\n\n`,
+      nombre: 'Prueba desde el panel',
+    })
+    mensaje.value = `Prueba enviada a «${i.nombre}» (trabajo ${t.id}).`
+  } catch (e) {
+    mensaje.value = `No se pudo: ${e.message}`
+  } finally {
+    probando.value = null
+  }
+}
+
+// Se refresca solo: el estado cambia cuando alguien echa papel al otro lado,
+// no cuando aquí se pulsa un botón.
 onMounted(() => {
   carga()
   temporizador = setInterval(carga, 5000)
@@ -48,6 +84,7 @@ onUnmounted(() => clearInterval(temporizador))
 <template>
   <div class="cabecera-seccion"><h2>Impresoras</h2></div>
   <p v-if="error" class="aviso">{{ error }}</p>
+  <p v-if="mensaje" class="exito">{{ mensaje }}</p>
 
   <p v-if="!impresoras.length" class="apagado">
     Todavía no hay ninguna. Instala el agente en la computadora que las tiene y
@@ -56,7 +93,10 @@ onUnmounted(() => clearInterval(temporizador))
 
   <table v-else>
     <thead>
-      <tr><th>Impresora</th><th>Estado</th><th>Computadora</th><th>Dominio</th><th>Cola</th><th>Formatos</th><th></th></tr>
+      <tr>
+        <th>Impresora</th><th>Estado</th><th>Computadora</th>
+        <th>Dominio</th><th>Cola</th><th></th>
+      </tr>
     </thead>
     <tbody>
       <tr v-for="i in impresoras" :key="i.id">
@@ -66,7 +106,13 @@ onUnmounted(() => clearInterval(temporizador))
           </template>
           <template v-else>
             <strong>{{ i.nombre }}</strong>
-            <div class="apagado" style="font-size: 13px"><code>{{ i.sistema }}</code></div>
+            <span v-if="esNueva(i)" class="nueva">nueva</span>
+            <div v-if="identidad(i)" class="apagado" style="font-size: 13px">
+              {{ identidad(i) }}
+            </div>
+            <div class="apagado" style="font-size: 12px">
+              <code>{{ i.sistema }}</code> · {{ (i.formatos || []).join(', ') }}
+            </div>
           </template>
         </td>
         <td>
@@ -86,10 +132,17 @@ onUnmounted(() => clearInterval(temporizador))
         </td>
         <td class="apagado">{{ i.dominio_nombre || '—' }}</td>
         <td>{{ i.cola }}</td>
-        <td class="apagado" style="font-size: 13px">{{ (i.formatos || []).join(', ') }}</td>
-        <td>
+        <td style="white-space: nowrap">
           <button
             class="boton suave chico"
+            :disabled="probando === i.id"
+            @click="prueba(i)"
+          >
+            {{ probando === i.id ? '…' : 'Prueba' }}
+          </button>
+          <button
+            class="boton suave chico"
+            style="margin-left: 6px"
             @click="editando === i.id ? renombra(i) : ((editando = i.id), (nombreNuevo = i.nombre))"
           >
             {{ editando === i.id ? 'Guardar' : 'Renombrar' }}

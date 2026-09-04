@@ -192,6 +192,15 @@ input, select {
 input:focus, select:focus { outline: 2px solid var(--marca); outline-offset: -1px; }
 
 .aviso { color: var(--mal); font-size: 14px; }
+
+/* La que acaba de aparecer. Quien enchufa una impresora y abre esta pantalla
+   busca exactamente esto. */
+.nueva {
+  display: inline-block; margin-left: 8px; padding: 2px 8px;
+  border-radius: 999px; background: var(--marca); color: #fff;
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .04em; vertical-align: middle;
+}
 .exito {
   background: var(--marca-suave); border: 1px solid var(--marca);
   border-radius: var(--radio); padding: 14px; margin-bottom: 16px; font-size: 14px;

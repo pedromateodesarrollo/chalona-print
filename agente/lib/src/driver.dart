@@ -10,6 +10,10 @@ class ImpresoraLocal {
     this.cola = 0,
     this.predeterminada = false,
     this.formatos = const ['raw'],
+    this.fabricante = '',
+    this.modelo = '',
+    this.conexion = '',
+    this.serie = '',
   });
 
   /// El nombre con el que la conoce el spooler. Es la llave real.
@@ -24,6 +28,18 @@ class ImpresoraLocal {
   /// que rechace un PDF antes de encolarlo, y no después de que nadie imprima.
   final List<String> formatos;
 
+  /// Quién la fabrica, qué modelo es, cómo está enchufada y su número de serie.
+  ///
+  /// Nada de esto hace falta para imprimir: hace falta para **reconocerla**.
+  /// «PC42t-203-ESim» es el nombre de una cola; «Honeywell · USB · serie
+  /// 16207B3617» es la impresora que alguien acaba de conectar y está mirando.
+  final String fabricante;
+  final String modelo;
+
+  /// `usb`, `red` u `otro`.
+  final String conexion;
+  final String serie;
+
   Map<String, Object?> aJson() => {
     'sistema': sistema,
     'nombre': nombre,
@@ -32,6 +48,10 @@ class ImpresoraLocal {
     'cola': cola,
     'predeterminada': predeterminada,
     'formatos': formatos,
+    'fabricante': fabricante,
+    'modelo': modelo,
+    'conexion': conexion,
+    'serie': serie,
   };
 }
 

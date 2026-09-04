@@ -13,12 +13,28 @@ import '../driver.dart';
 
 /// Una impresora tal como la devuelve `EnumPrinters`.
 class ImpresoraWin {
-  const ImpresoraWin(this.nombre, this.estado, this.trabajos);
+  const ImpresoraWin(
+    this.nombre,
+    this.estado,
+    this.trabajos, {
+    this.driver = '',
+    this.puerto = '',
+    this.comentario = '',
+  });
+
   final String nombre;
 
   /// Bits `PRINTER_STATUS_*`.
   final int estado;
   final int trabajos;
+
+  /// El driver suele llevar el modelo real («ZDesigner GK420d»), y el puerto
+  /// dice cómo está enchufada («USB001», «IP_192.168.1.40»). Ninguno hace falta
+  /// para imprimir: hacen falta para que alguien reconozca su impresora en una
+  /// lista.
+  final String driver;
+  final String puerto;
+  final String comentario;
 }
 
 /// Enlace directo con el spooler de Windows (`winspool.drv`).
@@ -89,10 +105,15 @@ class Winspool {
         final info = buffer.cast<_PrinterInfo2>();
         return List.generate(devueltas.value, (i) {
           final p = (info + i).ref;
+          String texto(Pointer<Utf16> v) =>
+              v == nullptr ? '' : v.toDartString();
           return ImpresoraWin(
-            p.pPrinterName == nullptr ? '' : p.pPrinterName.toDartString(),
+            texto(p.pPrinterName),
             p.Status,
             p.cJobs,
+            driver: texto(p.pDriverName),
+            puerto: texto(p.pPortName),
+            comentario: texto(p.pComment),
           );
         }).where((p) => p.nombre.isNotEmpty).toList();
       } finally {
