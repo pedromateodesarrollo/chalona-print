@@ -385,14 +385,38 @@ class Servidor {
     // del servidor.
     final limpio = ruta.where((s) => s != '..' && s != '.').toList();
     var archivo = File([base.path, ...limpio].join(Platform.pathSeparator));
-    if (limpio.isEmpty || !archivo.existsSync()) {
+    final existe = limpio.isNotEmpty && archivo.existsSync();
+
+    if (!existe) {
+      // Un archivo con extensión que no está es un 404, no la portada.
+      //
+      // Devolver `index.html` en su lugar rompe de la peor manera: el
+      // navegador que tenía cacheada una versión anterior pide su `.js`, le
+      // llega HTML, se niega a ejecutarlo y la página queda muerta sin un solo
+      // error que explique nada. El respaldo a `index.html` es para las rutas
+      // del navegador (`/panel`), que no llevan extensión.
+      if (limpio.isNotEmpty && limpio.last.contains('.')) {
+        await _escribe(pet, Respuesta.falla(404, 'no_encontrado', ''));
+        return;
+      }
       archivo = File('${base.path}${Platform.pathSeparator}index.html');
+      if (!archivo.existsSync()) {
+        await _escribe(pet, Respuesta.falla(404, 'no_encontrado', ''));
+        return;
+      }
     }
-    if (!archivo.existsSync()) {
-      await _escribe(pet, Respuesta.falla(404, 'no_encontrado', ''));
-      return;
-    }
-    pet.response.headers.contentType = _tipo(archivo.path);
+
+    // Los archivos de `assets/` llevan el hash del contenido en el nombre: si
+    // cambian, cambia la URL. Se pueden cachear para siempre. `index.html` es
+    // lo contrario: es el que dice qué hash toca hoy, y cachearlo es lo que
+    // deja a un navegador pidiendo archivos que ya no existen.
+    final enAssets = limpio.isNotEmpty && limpio.first == 'assets';
+    pet.response.headers
+      ..contentType = _tipo(archivo.path)
+      ..set(
+        'cache-control',
+        enAssets && existe ? 'public, max-age=31536000, immutable' : 'no-cache',
+      );
     await pet.response.addStream(archivo.openRead());
     await pet.response.close();
   }
