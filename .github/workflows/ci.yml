@@ -1,0 +1,35 @@
+name: análisis y pruebas
+
+on:
+  push: { branches: [main] }
+  pull_request:
+
+jobs:
+  dart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - name: hub
+        working-directory: hub
+        run: |
+          dart pub get
+          dart analyze
+          dart test
+      - name: agente
+        working-directory: agente
+        run: |
+          dart pub get
+          dart analyze
+          dart test
+
+  sitio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - working-directory: manager
+        run: |
+          npm install
+          npm run build

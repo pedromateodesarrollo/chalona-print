@@ -1,0 +1,19 @@
+name: chalona_print_agente
+description: Agente de chalona-print — corre en la computadora que tiene las impresoras.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.9.0 <4.0.0'
+
+# Una sola dependencia, y del equipo de Dart. El agente se instala en
+# computadoras ajenas: cuantas menos piezas traiga, menos cosas pueden
+# romperse ahí. WebSocket, HTTP y panel salen de dart:io; el spooler de Windows
+# y el icono de la bandeja, de dart:ffi — y `package:ffi` es lo que da el
+# manejo de memoria y de cadenas UTF-16 que dart:ffi no trae solo.
+dependencies:
+  ffi: ^2.1.0
+
+dev_dependencies:
+  test: ^1.24.0
+  lints: ^4.0.0

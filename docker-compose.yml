@@ -1,0 +1,36 @@
+# Un hub funcionando en dos minutos: Postgres + el hub.
+#
+#   docker compose up -d
+#   → http://localhost:3070
+#
+# Para producción, cambia PRINT_SECRETO_JWT por uno tuyo (si no, cada reinicio
+# cierra la sesión de todos) y pon Postgres donde lo tengas.
+
+services:
+  bd:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: print
+      POSTGRES_PASSWORD: print
+      POSTGRES_DB: chalona_print
+    volumes:
+      - datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U print']
+      interval: 5s
+      retries: 10
+
+  hub:
+    build: { context: ., dockerfile: hub/Dockerfile }
+    depends_on:
+      bd: { condition: service_healthy }
+    environment:
+      PRINT_DATABASE_URL: postgres://print:print@bd:5432/chalona_print
+      PRINT_PUERTO: '3070'
+      PRINT_SECRETO_JWT: cambia-esto-en-produccion
+      PRINT_REGISTRO: abierto
+    ports:
+      - '3070:3070'
+
+volumes:
+  datos:

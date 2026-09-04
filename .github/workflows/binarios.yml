@@ -1,0 +1,54 @@
+# Compila los ejecutables del agente para los tres sistemas.
+#
+# El de Windows tiene que salir de aquí: `dart compile exe` genera para el
+# sistema donde corre, no cruza. Sin esta pieza haría falta una máquina Windows
+# a mano cada vez que se publica una versión.
+
+name: binarios del agente
+
+on:
+  push: { tags: ['v*'] }
+  workflow_dispatch:
+
+jobs:
+  compilar:
+    strategy:
+      matrix:
+        include:
+          - so: ubuntu-latest
+            nombre: chalona-print-agente-linux-x64
+            salida: chalona-print-agente
+          - so: windows-latest
+            nombre: chalona-print-agente-windows-x64
+            salida: chalona-print-agente.exe
+          - so: macos-latest
+            nombre: chalona-print-agente-macos-arm64
+            salida: chalona-print-agente
+    runs-on: ${{ matrix.so }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - working-directory: agente
+        run: |
+          dart pub get
+          dart compile exe bin/chalona_print_agente.dart -o ${{ matrix.salida }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.nombre }}
+          path: agente/${{ matrix.salida }}
+
+  hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - working-directory: hub
+        run: |
+          dart pub get
+          dart compile exe bin/chalona_print_hub.dart -o chalona-print-hub
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chalona-print-hub-linux-x64
+          path: |
+            hub/chalona-print-hub
+            hub/migraciones
