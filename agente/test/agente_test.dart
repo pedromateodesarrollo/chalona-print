@@ -72,6 +72,27 @@ void main() {
       expect(epl.split('\n').where((l) => l.startsWith('A')).length, greaterThan(2));
       expect(epl, isNot(contains('"la "buena""')));
     });
+
+    test('un nombre largo se recorta sin salirse de latin1', () {
+      // El recorte remataba con puntos suspensivos, que no existen en latin1:
+      // la prueba de la PC42t —32 caracteres de nombre— moría al construirse,
+      // sin llegar al spooler y sin que nadie supiera por qué.
+      const cola = 'Honeywell PC42t (203 dpi) - ESim';
+      final epl = String.fromCharCodes(
+        Prueba.contenido(ficha('ESim', sistema: cola), cola),
+      );
+      expect(epl, contains('Honeywell PC42t (203 dpi) -...'));
+      expect(epl, isNot(contains('…')));
+    });
+
+    test('un nombre con caracteres raros tampoco rompe nada', () {
+      // El nombre de la cola lo escribe quien instaló la impresora.
+      const cola = 'Etiquetas ✓ recepción';
+      expect(
+        () => Prueba.contenido(ficha('ESim', sistema: cola), cola),
+        returnsNormally,
+      );
+    });
   });
 
   group('registro de lo ya impreso', () {

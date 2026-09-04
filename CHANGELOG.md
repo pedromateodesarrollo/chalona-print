@@ -3,6 +3,16 @@
 Las versiones siguen [SemVer](https://semver.org/lang/es/). El número de
 protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
 
+## 0.2.2 — 2026-09-04
+
+### Agente
+
+* La página de prueba fallaba en toda impresora con más de 30 caracteres en el
+  nombre. El recorte remataba con puntos suspensivos, que no existen en latin1,
+  y el trabajo moría al construirse —sin llegar al spooler— con un
+  «Contains invalid characters» que no señalaba a ninguna parte. El nombre de
+  la cola se limpia ahora antes de armar el comando, venga de donde venga.
+
 ## 0.2.1 — 2026-09-04
 
 ### Agente

@@ -46,7 +46,7 @@ class Prueba {
     final fecha =
         '${_dd(ahora.day)}/${_dd(ahora.month)}/${ahora.year}  '
         '${_dd(ahora.hour)}:${_dd(ahora.minute)}';
-    final nombre = _recorta(i?.nombre ?? nombreCola, 30);
+    final nombre = _latin1(_recorta(i?.nombre ?? nombreCola, 30));
 
     switch (lenguaje(i, nombreCola)) {
       case 'epl':
@@ -95,7 +95,14 @@ class Prueba {
   static String _dd(int n) => n.toString().padLeft(2, '0');
 
   static String _recorta(String s, int max) =>
-      s.length <= max ? s : '${s.substring(0, max - 1)}…';
+      s.length <= max ? s : '${s.substring(0, max - 3)}...';
+
+  /// Todo el comando se codifica en latin1, y `encode` revienta con cualquier
+  /// carácter que no quepa en esa tabla. Lo ponía el propio recorte —unos
+  /// puntos suspensivos— y puede ponerlo el nombre de la cola, que lo escribe
+  /// quien instaló la impresora. El trabajo moría al armarlo, sin llegar al
+  /// spooler: la prueba de una impresora no puede fallar por cómo se llama.
+  static String _latin1(String s) => s.replaceAll(RegExp(r'[^\x20-\xFF]'), '?');
 
   /// En EPL las comillas delimitan el dato; una en el nombre parte el comando.
   static String _epl(String s) => s.replaceAll('"', "'");
