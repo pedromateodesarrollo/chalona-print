@@ -105,6 +105,11 @@ class Respuesta {
   final Map<String, String> cabeceras;
 
   static Respuesta ok(Object? cuerpo) => Respuesta(200, cuerpo);
+
+  /// El manejador ya escribió y cerró la respuesta por su cuenta (una descarga
+  /// que va en flujo, no en JSON). Sin esta señal, el ciclo intentaría cerrar
+  /// dos veces la misma respuesta.
+  static Respuesta yaEscrita() => Respuesta(0, null);
   static Respuesta creado(Object? cuerpo) => Respuesta(201, cuerpo);
   static Respuesta vacio() => Respuesta(204, null);
 
@@ -187,8 +192,13 @@ class Servidor {
 
     final ruta = pet.uri.pathSegments.where((s) => s.isNotEmpty).toList();
 
+    // HEAD se atiende con el manejador de GET y sin cuerpo. Es lo que manda un
+    // `curl -I` y lo que usa un navegador para comprobar una descarga; sin
+    // esto, la misma URL que funciona da 404 al mirarla.
+    final metodo = pet.method == 'HEAD' ? 'GET' : pet.method;
+
     for (final r in _rutas) {
-      final params = r.casa(pet.method, ruta);
+      final params = r.casa(metodo, ruta);
       if (params == null) continue;
       await _corre(pet, r, params);
       return;
@@ -357,10 +367,11 @@ class Servidor {
   }
 
   Future<void> _escribe(HttpRequest pet, Respuesta r) async {
+    if (r.estado == 0) return; // ya la escribió el manejador
     final res = pet.response;
     res.statusCode = r.estado;
     r.cabeceras.forEach(res.headers.set);
-    if (r.cuerpo == null) {
+    if (r.cuerpo == null || pet.method == 'HEAD') {
       await res.close();
       return;
     }

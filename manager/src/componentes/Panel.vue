@@ -6,6 +6,7 @@ import Impresoras from './Impresoras.vue'
 import Trabajos from './Trabajos.vue'
 import Llaves from './Llaves.vue'
 import Dominios from './Dominios.vue'
+import Descargas from './Descargas.vue'
 import Usuarios from './Usuarios.vue'
 
 const yo = ref(null)
@@ -23,6 +24,7 @@ const secciones = [
   ['impresoras', 'Impresoras', Impresoras],
   ['trabajos', 'Trabajos', Trabajos],
   ['agentes', 'Agentes', Agentes],
+  ['instalar', 'Instalar agente', Descargas],
   ['dominios', 'Dominios', Dominios],
   ['llaves', 'Llaves de API', Llaves],
   ['usuarios', 'Usuarios', Usuarios],

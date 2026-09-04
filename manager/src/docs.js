@@ -343,6 +343,34 @@ export const puntos = [
     resumen: 'Da de baja a alguien.',
   },
 
+  // ----------------------------------------------------------- descargas
+  {
+    grupo: 'Descargas',
+    metodo: 'GET',
+    ruta: '/v1/descargas',
+    acceso: 'público',
+    resumen: 'Qué ejecutables del agente publica este hub, con tamaño y sha256.',
+    nota:
+      'Público a propósito: una máquina que va a instalar el agente todavía no ' +
+      'tiene credencial ninguna.',
+    respuesta: `{
+  "descargas": [{
+    "archivo": "chalona-print-agente-linux-x64",
+    "url": "/descargas/chalona-print-agente-linux-x64",
+    "sistema": "linux",
+    "bytes": 7617144,
+    "sha256": "…"
+  }]
+}`,
+  },
+  {
+    grupo: 'Descargas',
+    metodo: 'GET',
+    ruta: '/descargas/:archivo',
+    acceso: 'público',
+    resumen: 'Baja un ejecutable o el script de instalación.',
+  },
+
   // --------------------------------------------------------------- salud
   {
     grupo: 'Salud',

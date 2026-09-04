@@ -329,6 +329,34 @@ Cambia una clave. La propia siempre; la de otros, con rol admin.
 
 Da de baja a alguien.
 
+## Descargas
+
+### `GET /v1/descargas`
+
+*Acceso: público*
+
+Qué ejecutables del agente publica este hub, con tamaño y sha256.
+
+Público a propósito: una máquina que va a instalar el agente todavía no tiene credencial ninguna.
+
+```json
+{
+  "descargas": [{
+    "archivo": "chalona-print-agente-linux-x64",
+    "url": "/descargas/chalona-print-agente-linux-x64",
+    "sistema": "linux",
+    "bytes": 7617144,
+    "sha256": "…"
+  }]
+}
+```
+
+### `GET /descargas/:archivo`
+
+*Acceso: público*
+
+Baja un ejecutable o el script de instalación.
+
 ## Salud
 
 ### `GET /salud`

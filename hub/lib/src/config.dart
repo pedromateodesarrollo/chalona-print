@@ -16,6 +16,7 @@ class Config {
     required this.maxTrabajoBytes,
     required this.ttlTrabajo,
     required this.rutaManager,
+    required this.rutaDescargas,
     required this.secretoEfimero,
   });
 
@@ -44,6 +45,11 @@ class Config {
   /// Carpeta con el web manager compilado. Si no existe, el hub sirve solo API.
   final String rutaManager;
 
+  /// Carpeta con los ejecutables del agente. Lo que haya ahí se publica en
+  /// `/descargas/…`; si no existe, la página lo dice en vez de ofrecer un
+  /// enlace muerto.
+  final String rutaDescargas;
+
   /// True cuando el secreto JWT se generó al arrancar (no venía por entorno).
   /// Vale para desarrollo; en producción significa que un reinicio saca a todos.
   final bool secretoEfimero;
@@ -57,6 +63,7 @@ class Config {
     'PRINT_MAX_TRABAJO_MB (8)',
     'PRINT_TTL_HORAS      (24)',
     'PRINT_MANAGER        (ruta al manager compilado; por defecto ./manager)',
+    'PRINT_DESCARGAS      (ruta a los ejecutables del agente; por defecto ./descargas)',
   ];
 
   static String get ayuda => _reglas.join('\n  ');
@@ -89,6 +96,7 @@ class Config {
           (int.tryParse(e['PRINT_MAX_TRABAJO_MB'] ?? '') ?? 8) * 1024 * 1024,
       ttlTrabajo: Duration(hours: int.tryParse(e['PRINT_TTL_HORAS'] ?? '') ?? 24),
       rutaManager: (e['PRINT_MANAGER'] ?? 'manager').trim(),
+      rutaDescargas: (e['PRINT_DESCARGAS'] ?? 'descargas').trim(),
     );
   }
 

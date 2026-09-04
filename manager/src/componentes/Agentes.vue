@@ -31,9 +31,6 @@ async function borra(a) {
 
 const hora = (s) => (s ? new Date(s).toLocaleString() : '—')
 
-// La dirección de este mismo hub, para que el comando de instalación se pueda
-// copiar tal cual en vez de obligar a nadie a acordarse de la URL.
-const origen = location.origin
 
 onMounted(() => {
   carga()
@@ -49,12 +46,10 @@ onUnmounted(() => clearInterval(temporizador))
   <div class="tarjeta" style="margin-bottom: 18px">
     <h3>Conectar una computadora</h3>
     <p class="apagado">
-      Instala el agente en la máquina que tiene las impresoras y dale dos datos:
-      la dirección de este hub y una llave de API (las creas en «Llaves de API»).
-      Aparecerá sola en esta lista.
+      El agente se instala en la máquina que tiene las impresoras y aparece sola
+      en esta lista. En <strong>Instalar agente</strong> están el programa y el
+      comando ya preparado con la dirección de este hub.
     </p>
-    <pre>chalona-print-agente configurar --hub {{ origen }} --llave cpk_...
-chalona-print-agente instalar</pre>
   </div>
 
   <table v-if="agentes.length">

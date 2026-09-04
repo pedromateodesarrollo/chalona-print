@@ -12,6 +12,7 @@ import 'src/config.dart';
 import 'src/db.dart';
 import 'src/http/rutas_agentes.dart';
 import 'src/http/rutas_auth.dart';
+import 'src/http/rutas_descargas.dart';
 import 'src/http/rutas_dominios.dart';
 import 'src/http/rutas_impresoras.dart';
 import 'src/http/rutas_llaves.dart';
@@ -47,6 +48,7 @@ class Hub {
     servidor.upgrades.add(agentes.upgrade);
     registraRutasAuth(servidor);
     registraRutasDominios(servidor);
+    registraRutasDescargas(servidor);
     registraRutasAgentes(servidor, agentes);
     registraRutasImpresoras(servidor, agentes);
     registraRutasTrabajos(servidor, agentes, cola);
