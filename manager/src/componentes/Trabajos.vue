@@ -48,6 +48,8 @@ async function imprimePrueba() {
       texto: prueba.value.texto,
       nombre: 'Prueba desde el panel',
     })
+    // Nota: aquí sí va texto porque el contenido lo escribe la persona. La
+    // prueba automática, la del botón en Impresoras, usa formato `prueba`.
     mensaje.value = `Trabajo ${t.id} enviado.`
     await carga()
   } catch (e) {

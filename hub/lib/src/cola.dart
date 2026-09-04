@@ -76,13 +76,18 @@ class Despachador {
     }
   }
 
+  /// Primera versión del agente que sabe armar el formato `prueba`.
+  static const _versionPrueba = '0.2.0';
+
   /// Manda un trabajo concreto. Devuelve true si salió hacia el agente.
   Future<bool> despacha(int trabajo) async {
     final t = await bd.fila(
       '''select t.id, t.agente, t.formato, t.nombre, t.copias, t.opciones,
-                t.contenido, i.sistema
+                t.contenido, i.sistema, i.nombre as impresora_nombre,
+                a.version as agente_version
            from print.trabajo t
            join print.impresora i on i.id = t.impresora
+           join print.agente a on a.id = t.agente
           where t.id = @i and t.estado in ('en_cola', 'enviado')''',
       {'i': trabajo},
     );
@@ -91,14 +96,30 @@ class Despachador {
     if (agente == null) return false;
 
     final contenido = t['contenido'];
-    final bytes = contenido is Uint8List
+    var bytes = contenido is Uint8List
         ? contenido
         : Uint8List.fromList((contenido as List).cast<int>());
+    var formato = t['formato'] as String;
+
+    // Un agente instalado hace meses no conoce `prueba` y lo rechazaría. Antes
+    // que romperle el botón a quien no ha actualizado, se le manda una prueba
+    // de texto: peor en una etiquetadora, pero honesta y sin sorpresas.
+    if (formato == 'prueba' &&
+        !_alMenos(t['agente_version']?.toString() ?? '', _versionPrueba)) {
+      formato = 'texto';
+      bytes = Uint8List.fromList(
+        utf8.encode(
+          'chalona-print\r\n${t['impresora_nombre']}\r\n'
+          '${DateTime.now()}\r\nprueba de impresion\r\n\r\n\r\n\f',
+        ),
+      );
+      log.info('cola', 'trabajo $trabajo: prueba degradada a texto (agente v${t['agente_version']})');
+    }
 
     final salio = hub.enviar(agente, {
       'tipo': Protocolo.trabajo,
       'id': t['id'],
-      'formato': t['formato'],
+      'formato': formato,
       'nombre': t['nombre'],
       'impresora': t['sistema'],
       'copias': t['copias'],
@@ -114,6 +135,21 @@ class Despachador {
           where id = @i''',
       {'i': trabajo, 'e': EstadoTrabajo.enviado},
     );
+    return true;
+  }
+
+  /// Compara versiones tipo `0.2.0`. Una versión vacía —un agente que nunca
+  /// llegó a saludar— cuenta como vieja, que es el lado seguro.
+  bool _alMenos(String version, String minima) {
+    List<int> partes(String v) => v
+        .split('.')
+        .map((p) => int.tryParse(p.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0)
+        .toList();
+    final a = partes(version), b = partes(minima);
+    for (var i = 0; i < b.length; i++) {
+      final x = i < a.length ? a[i] : 0;
+      if (x != b[i]) return x > b[i];
+    }
     return true;
   }
 

@@ -173,7 +173,7 @@ export const puntos = [
     cuerpo: [
       ['impresora', 'número', 'sí*', 'Id de la impresora'],
       ['impresora_nombre', 'texto', 'sí*', 'Alternativa al id: nombre visible o del sistema'],
-      ['formato', 'texto', 'no', '`raw` (por defecto), `pdf`, `imagen` o `texto`'],
+      ['formato', 'texto', 'no', '`raw` (por defecto), `pdf`, `imagen`, `texto` o `prueba`'],
       ['contenido_b64', 'texto', 'sí*', 'El contenido en base64'],
       ['texto', 'texto', 'sí*', 'Alternativa: texto plano, sin codificar'],
       ['copias', 'número', 'no', '1 a 999'],
@@ -184,7 +184,10 @@ export const puntos = [
     nota:
       '`impresora` o `impresora_nombre`, y `contenido_b64` o `texto`. Si mandas ' +
       '`idempotencia` y esa llave ya existe, se devuelve el trabajo anterior con ' +
-      '`"repetido": true` y **no se imprime otra vez**.',
+      '`"repetido": true` y **no se imprime otra vez**.\n\n' +
+      'El formato `prueba` va sin contenido: la arma el agente en el lenguaje ' +
+      'que hable esa impresora (EPL, ZPL o texto). Es la única forma de que una ' +
+      'prueba funcione tanto en una láser como en una etiquetadora.',
     respuesta: `{
   "id": 128,
   "estado": "enviado",

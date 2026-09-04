@@ -26,8 +26,12 @@ void registraRutasTrabajos(Servidor s, HubAgentes hub, Despachador cola) {
       'formato',
       porDefecto: p.cuerpo.containsKey('texto') ? 'texto' : 'raw',
     );
-    if (!const ['raw', 'pdf', 'imagen', 'texto'].contains(formato)) {
-      return Respuesta.falla(400, 'formato_invalido', 'Formatos: raw, pdf, imagen, texto');
+    if (!const ['raw', 'pdf', 'imagen', 'texto', 'prueba'].contains(formato)) {
+      return Respuesta.falla(
+        400,
+        'formato_invalido',
+        'Formatos: raw, pdf, imagen, texto, prueba',
+      );
     }
 
     // El contenido viaja en base64 salvo el texto plano, que se manda tal cual
@@ -40,9 +44,14 @@ void registraRutasTrabajos(Servidor s, HubAgentes hub, Despachador cola) {
     } catch (_) {
       return Respuesta.falla(400, 'contenido_invalido', 'contenido_b64 no es base64 válido');
     }
-    if (contenido.isEmpty) {
+    // `prueba` no lleva contenido: lo arma el agente según el lenguaje de la
+    // impresora. Se guarda un marcador para no dejar la columna vacía.
+    if (contenido.isEmpty && formato != 'prueba') {
       return Respuesta.falla(400, 'contenido_vacio', 'No hay nada que imprimir');
     }
+    final aGuardar = contenido.isEmpty
+        ? Uint8List.fromList(utf8.encode('prueba'))
+        : contenido;
     if (contenido.length > p.config.maxTrabajoBytes) {
       return Respuesta.falla(
         413,
@@ -69,7 +78,9 @@ void registraRutasTrabajos(Servidor s, HubAgentes hub, Despachador cola) {
       return Respuesta.falla(409, 'impresora_ausente',
           'El agente ya no ve esa impresora en su sistema');
     }
-    if (!_soporta(impresora['formatos'], formato)) {
+    // `prueba` no se comprueba contra los formatos: el agente la traduce a lo
+    // que esa impresora entienda, y toda impresora entiende su propia prueba.
+    if (formato != 'prueba' && !_soporta(impresora['formatos'], formato)) {
       return Respuesta.falla(415, 'formato_no_soportado',
           'Esa impresora no admite $formato');
     }
@@ -103,7 +114,7 @@ void registraRutasTrabajos(Servidor s, HubAgentes hub, Despachador cola) {
           'ag': impresora['agente'],
           'f': formato,
           'n': p.texto('nombre'),
-          'c': contenido,
+          'c': aGuardar,
           'cop': copias,
           'op': jsonEncode(p.cuerpo['opciones'] is Map ? p.cuerpo['opciones'] : {}),
           'k': idempotencia,

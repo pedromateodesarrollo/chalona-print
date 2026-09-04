@@ -7,13 +7,17 @@ import 'dart:typed_data';
 import 'config.dart';
 import 'driver.dart';
 import 'hechos.dart';
+import 'prueba.dart';
 import 'log.dart';
 
 /// Versión del protocolo que habla este agente. Ver docs/protocolo.md.
 const int protocoloVersion = 1;
 
 /// Versión del agente. Se reporta al hub y sale en el panel.
-const String agenteVersion = '0.1.0';
+///
+/// El hub la mira para no mandarle a un agente viejo algo que no entienda:
+/// desde la 0.2.0 sabe armar el formato `prueba`.
+const String agenteVersion = '0.2.0';
 
 /// El agente: mantiene el WebSocket con el hub e imprime lo que llegue.
 ///
@@ -157,14 +161,33 @@ class Cliente {
     ws.add(jsonEncode({'tipo': 'ack', 'trabajo': id, 'estado': 'imprimiendo'}));
 
     try {
-      final contenido = Uint8List.fromList(
+      final impresora = f['impresora']?.toString() ?? '';
+      var formato = f['formato']?.toString() ?? 'raw';
+      var contenido = Uint8List.fromList(
         base64.decode(f['contenido_b64']?.toString() ?? ''),
       );
+
+      // La prueba la arma el agente, no el hub: aquí es donde se sabe si esta
+      // cola habla EPL, ZPL o texto. Sale como `raw` para que nadie la toque
+      // por el camino.
+      if (formato == 'prueba') {
+        ImpresoraLocal? ficha;
+        for (final x in ultimoInventario) {
+          if (x.sistema == impresora) {
+            ficha = x;
+            break;
+          }
+        }
+        contenido = Prueba.contenido(ficha, impresora);
+        formato = 'raw';
+        log.info('trabajo', '$id: prueba en ${Prueba.lenguaje(ficha, impresora)}');
+      }
+
       await driver.imprime(
         TrabajoLocal(
           id: id,
-          impresora: f['impresora']?.toString() ?? '',
-          formato: f['formato']?.toString() ?? 'raw',
+          impresora: impresora,
+          formato: formato,
           contenido: contenido,
           nombre: f['nombre']?.toString() ?? '',
           copias: (f['copias'] as num?)?.toInt() ?? 1,

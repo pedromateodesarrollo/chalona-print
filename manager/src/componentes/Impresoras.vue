@@ -85,13 +85,17 @@ async function renombra(i) {
 }
 
 /// Imprimir es la única forma de saber cuál de las cinco es la de enfrente.
+///
+/// Va como formato `prueba` y sin contenido: lo arma el agente, que es el
+/// único que sabe si esa impresora habla EPL, ZPL o texto. Mandar texto plano
+/// a una etiquetadora no imprimía nada y el trabajo quedaba en «hecho».
 async function prueba(i) {
   probando.value = i.id
   mensaje.value = ''
   try {
     const t = await api.post('/v1/trabajos', {
       impresora: i.id,
-      texto: `chalona-print\n${i.nombre}\n${new Date().toLocaleString()}\n\n\n`,
+      formato: 'prueba',
       nombre: 'Prueba desde el panel',
     })
     mensaje.value = `Prueba enviada a «${i.nombre}» (trabajo ${t.id}).`

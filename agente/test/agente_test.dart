@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:chalona_print_agente/src/config.dart';
+import 'package:chalona_print_agente/src/driver.dart';
 import 'package:chalona_print_agente/src/hechos.dart';
+import 'package:chalona_print_agente/src/prueba.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -19,6 +21,56 @@ void main() {
     test('respeta un hub que vive bajo un prefijo', () {
       final c = ConfigAgente(hub: 'https://ejemplo.com/print');
       expect(c.urlWs, 'wss://ejemplo.com/print/agente/ws');
+    });
+  });
+
+  group('página de prueba', () {
+    ImpresoraLocal ficha(String modelo, {String fabricante = '', String sistema = 'cola'}) =>
+        ImpresoraLocal(
+          sistema: sistema,
+          nombre: sistema,
+          estado: Estado.lista,
+          modelo: modelo,
+          fabricante: fabricante,
+        );
+
+    test('reconoce las emulaciones por su nombre de fábrica', () {
+      // Honeywell llama ESim a su EPL y ZSim a su ZPL; el driver de Zebra se
+      // llama ZDesigner. Son las pistas que de verdad aparecen instaladas.
+      expect(Prueba.lenguaje(ficha('Honeywell PC42t (203 dpi) - ESim'), ''), 'epl');
+      expect(Prueba.lenguaje(ficha('Honeywell PC42t (203 dpi) - ZSim'), ''), 'zpl');
+      expect(Prueba.lenguaje(ficha('ZDesigner GK420d'), ''), 'zpl');
+      expect(Prueba.lenguaje(ficha('Generic / Text Only'), ''), 'texto');
+    });
+
+    test('también mira el nombre de la cola cuando no hay modelo', () {
+      expect(Prueba.lenguaje(null, 'PC42t-203-ESim'), 'epl');
+      expect(Prueba.lenguaje(null, 'Canon_MF450_Series'), 'texto');
+    });
+
+    test('cada lenguaje sale con su envoltura', () {
+      final epl = String.fromCharCodes(Prueba.contenido(ficha('… ESim'), 'x'));
+      expect(epl, startsWith('N\n'));
+      expect(epl, contains('P1'));
+
+      final zpl = String.fromCharCodes(Prueba.contenido(ficha('ZDesigner'), 'x'));
+      expect(zpl, startsWith('^XA'));
+      expect(zpl, contains('^XZ'));
+
+      // El texto acaba en avance de página; sin él la hoja se queda dentro.
+      final texto = String.fromCharCodes(Prueba.contenido(ficha('Generic'), 'x'));
+      expect(texto, contains('chalona-print'));
+      expect(texto, endsWith('\f'));
+    });
+
+    test('un nombre con comillas no rompe el comando EPL', () {
+      // En EPL las comillas delimitan el dato: una dentro parte el comando y
+      // la impresora escupe basura o nada.
+      final epl = String.fromCharCodes(
+        Prueba.contenido(ficha('ESim', sistema: 'la "buena"'), 'la "buena"'),
+      );
+      expect(epl.split('\n').where((l) => l.startsWith('A')).length, greaterThan(2));
+      expect(epl, isNot(contains('"la "buena""')));
     });
   });
 
