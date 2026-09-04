@@ -78,8 +78,10 @@ onUnmounted(() => clearInterval(temporizador))
         </td>
         <td>
           {{ i.agente_nombre }}
+          <!-- «agente» explícito: en una fila de impresora, un «conectada» a
+               secas se lee como si hablara de la impresora, y es del agente. -->
           <div class="apagado" style="font-size: 13px">
-            {{ i.agente_conectado ? 'conectada' : 'sin conexión' }}
+            {{ i.agente_conectado ? 'agente conectado' : 'agente sin conexión' }}
           </div>
         </td>
         <td class="apagado">{{ i.dominio_nombre || '—' }}</td>
