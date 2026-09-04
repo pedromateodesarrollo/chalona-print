@@ -118,6 +118,16 @@ nombre sería dejar escribir en ella.
 | `manager/` | Sitio web: presentación, documentación y panel de administración |
 | `docs/` | Protocolo del WebSocket y referencia del API |
 
+## Seguridad
+
+El agente corre como servicio del sistema y manda al spooler lo que le llega,
+tal cual. Antes de instalarlo en la computadora de un cliente conviene leer
+[SECURITY.md](SECURITY.md): qué puede hacer cada pieza, cómo se guardan las
+credenciales, cuánto se conserva el contenido de los trabajos y qué **no** hace
+todavía.
+
+Fallos de seguridad: pedromateo.desarrollo@gmail.com, no un issue público.
+
 ## Licencia
 
 Apache-2.0. Úsalo, cámbialo, móntalo para tus clientes.

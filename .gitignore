@@ -1,7 +1,8 @@
+# El lockfile SÍ se versiona: hub y agente son aplicaciones, no librerías, y
+# lo que se despliega tiene que poder reconstruirse igual dentro de un año.
 .dart_tool/
 .packages
 build/
-pubspec.lock
 *.exe
 *.log
 .env

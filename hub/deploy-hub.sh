@@ -10,7 +10,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly DEPLOY_HOST="${DEPLOY_HOST:-ecf.vicortiz.com}"
+# Sin valor por defecto a propósito: un despliegue tiene que decir a dónde va.
+readonly DEPLOY_HOST="${DEPLOY_HOST:-}"
 readonly INSTALL_DIR="${INSTALL_DIR:-/opt/chalona-print-hub}"
 readonly SERVICE_NAME="chalona-print-hub"
 readonly BINARY_NAME="chalona-print-hub"
@@ -23,7 +24,7 @@ deploy-hub.sh --local | --produccion
   --local        Compila e instala en ESTA máquina (systemd).
   --produccion   Compila aquí y despliega en DEPLOY_HOST por SSH.
 
-Variables: DEPLOY_HOST, INSTALL_DIR, PORT
+Variables: DEPLOY_HOST (obligatoria para --produccion), INSTALL_DIR, PORT
 AYUDA
 }
 
@@ -66,6 +67,7 @@ case "${1:-}" in
     systemctl status "$SERVICE_NAME" --no-pager | head -5
     ;;
   --produccion)
+    [[ -n "$DEPLOY_HOST" ]] || { echo "Define DEPLOY_HOST con el servidor de destino."; exit 64; }
     compila
     echo "→ subiendo a $DEPLOY_HOST…"
     ssh "$DEPLOY_HOST" "sudo mkdir -p $INSTALL_DIR && sudo chown \$USER $INSTALL_DIR"
@@ -83,7 +85,7 @@ case "${1:-}" in
       sleep 2
       systemctl status $SERVICE_NAME --no-pager | head -5"
     echo "→ salud:"
-    curl -sf "https://print.chalonasoft.com/salud" || curl -sf "http://$DEPLOY_HOST:$PORT/salud" || echo "(sin respuesta todavía)"
+    curl -sf "http://$DEPLOY_HOST:$PORT/salud" || echo "(sin respuesta desde fuera; comprueba nginx y el cortafuegos)"
     ;;
   *)
     usage; exit 64;;

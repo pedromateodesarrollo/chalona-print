@@ -26,6 +26,7 @@ class Despachador {
   final HubAgentes hub;
   final Config config;
   Timer? _barrido;
+  Timer? _limpieza;
 
   void arranca() {
     hub.alConectar = (agente) => unawaited(drena(agente));
@@ -37,9 +38,43 @@ class Despachador {
         log.error('cola', 'barrido falló: $e');
       }
     });
+
+    // La limpieza va aparte y espaciada: es un barrido de tabla, no algo que
+    // haga falta cada veinte segundos.
+    _limpieza = Timer.periodic(const Duration(hours: 1), (_) async {
+      try {
+        await purga();
+      } catch (e) {
+        log.error('cola', 'purga falló: $e');
+      }
+    });
+    unawaited(purga());
   }
 
-  void detiene() => _barrido?.cancel();
+  void detiene() {
+    _barrido?.cancel();
+    _limpieza?.cancel();
+  }
+
+  /// Borra el contenido de los trabajos ya terminados que pasaron del plazo.
+  ///
+  /// La fila se queda —el historial es lo que contesta «¿esto se imprimió?»—
+  /// pero los bytes se van. Ese contenido es el documento de un cliente y, una
+  /// vez impreso, guardarlo solo añade algo que perder.
+  Future<void> purga() async {
+    final r = await bd.filas(
+      '''update print.trabajo
+            set contenido = ''::bytea
+          where estado in ('hecho', 'fallido', 'cancelado')
+            and length(contenido) > 0
+            and coalesce(terminado, actualizado) < now() - @plazo::interval
+        returning id''',
+      {'plazo': '${config.retencion.inMinutes} minutes'},
+    );
+    if (r.isNotEmpty) {
+      log.info('cola', 'contenido borrado de ${r.length} trabajo(s) antiguos');
+    }
+  }
 
   /// Manda un trabajo concreto. Devuelve true si salió hacia el agente.
   Future<bool> despacha(int trabajo) async {

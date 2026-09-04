@@ -7,7 +7,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly DEPLOY_HOST="${DEPLOY_HOST:-ecf.vicortiz.com}"
+# Sin valor por defecto a propósito: un despliegue tiene que decir a dónde va.
+readonly DEPLOY_HOST="${DEPLOY_HOST:-}"
 readonly INSTALL_DIR="${INSTALL_DIR:-/opt/chalona-print-hub}"
 
 cd "$SCRIPT_DIR"
@@ -22,6 +23,7 @@ case "${1:-}" in
     sudo cp -r dist "$INSTALL_DIR/manager"
     ;;
   --produccion)
+    [[ -n "$DEPLOY_HOST" ]] || { echo "Define DEPLOY_HOST con el servidor de destino."; exit 64; }
     echo "→ subiendo a $DEPLOY_HOST…"
     tar -C dist -czf /tmp/chalona-print-manager.tgz .
     scp -q /tmp/chalona-print-manager.tgz "$DEPLOY_HOST:/tmp/"

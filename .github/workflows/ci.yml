@@ -23,6 +23,15 @@ jobs:
           dart analyze
           dart test
 
+  # La imagen se compila en cada cambio a propósito: el `docker compose up` del
+  # README es lo primero que prueba quien llega, y un Dockerfile roto ahí es la
+  # peor primera impresión posible.
+  imagen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f hub/Dockerfile -t chalona-print-hub .
+
   sitio:
     runs-on: ubuntu-latest
     steps:

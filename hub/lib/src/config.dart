@@ -15,6 +15,7 @@ class Config {
     required this.origenesCors,
     required this.maxTrabajoBytes,
     required this.ttlTrabajo,
+    required this.retencion,
     required this.rutaManager,
     required this.rutaDescargas,
     required this.orgPublicadora,
@@ -42,6 +43,14 @@ class Config {
   /// Cuánto vive un trabajo en cola antes de darse por vencido. Imprimir una
   /// orden de ayer porque la computadora estuvo apagada no ayuda a nadie.
   final Duration ttlTrabajo;
+
+  /// Cuánto se guarda el contenido de un trabajo ya terminado.
+  ///
+  /// El contenido es el documento del cliente —una factura, una etiqueta con
+  /// el nombre de alguien— y no hace falta para nada una vez impreso: lo que
+  /// se consulta después es el estado, no los bytes. Guardarlo indefinidamente
+  /// convierte la base en un archivo de documentos ajenos que nadie pidió.
+  final Duration retencion;
 
   /// Carpeta con el web manager compilado. Si no existe, el hub sirve solo API.
   final String rutaManager;
@@ -72,6 +81,7 @@ class Config {
     'PRINT_CORS           (lista separada por comas; vacío = *)',
     'PRINT_MAX_TRABAJO_MB (8)',
     'PRINT_TTL_HORAS      (24)',
+    'PRINT_RETENCION_DIAS (7; tras ese plazo se borra el contenido de los trabajos)',
     'PRINT_MANAGER        (ruta al manager compilado; por defecto ./manager)',
     'PRINT_DESCARGAS      (ruta a los ejecutables del agente; por defecto ./descargas)',
     'PRINT_ORG_PUBLICADORA(qué organización puede publicar ejecutables; por defecto 1)',
@@ -106,6 +116,7 @@ class Config {
       maxTrabajoBytes:
           (int.tryParse(e['PRINT_MAX_TRABAJO_MB'] ?? '') ?? 8) * 1024 * 1024,
       ttlTrabajo: Duration(hours: int.tryParse(e['PRINT_TTL_HORAS'] ?? '') ?? 24),
+      retencion: Duration(days: int.tryParse(e['PRINT_RETENCION_DIAS'] ?? '') ?? 7),
       rutaManager: (e['PRINT_MANAGER'] ?? 'manager').trim(),
       rutaDescargas: (e['PRINT_DESCARGAS'] ?? 'descargas').trim(),
       orgPublicadora: int.tryParse(e['PRINT_ORG_PUBLICADORA'] ?? '') ?? 1,
