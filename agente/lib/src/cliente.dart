@@ -17,7 +17,7 @@ const int protocoloVersion = 1;
 ///
 /// El hub la mira para no mandarle a un agente viejo algo que no entienda:
 /// desde la 0.2.0 sabe armar el formato `prueba`.
-const String agenteVersion = '0.2.0';
+const String agenteVersion = '0.2.1';
 
 /// El agente: mantiene el WebSocket con el hub e imprime lo que llegue.
 ///

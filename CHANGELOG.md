@@ -3,6 +3,39 @@
 Las versiones siguen [SemVer](https://semver.org/lang/es/). El número de
 protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
 
+## 0.2.1 — 2026-09-04
+
+### Agente
+
+* Windows: `correr` se moría nada más arrancar. Windows no tiene SIGTERM y
+  `watch()` lo rechaza de forma asíncrona, así que el fallo no llegaba al
+  `catch` sino que subía como excepción sin capturar. Instalado como tarea de
+  SYSTEM no hay consola donde verlo: la máquina quedaba sin agente y sin un
+  solo mensaje que lo dijera.
+* `desinstalar` para el proceso además de borrar la tarea, y tolera que solo
+  esté puesta una de las dos.
+* El icono de la bandeja comprueba que el shell lo aceptó, en vez de quedarse
+  corriendo para siempre sin icono y sin error.
+* `instalar` sin ser administrador lo dice, en vez de un volcado de pila.
+
+## 0.2.0 — 2026-09-04
+
+### Agente
+
+* La página de prueba la arma el agente, en el lenguaje de cada impresora:
+  EPL, ZPL o texto. Ni el hub ni el panel saben qué habla la impresora de
+  enfrente, y mandarle texto a una etiquetadora en modo ESim no imprime nada
+  **y deja el trabajo en «hecho»**: falla en silencio.
+
+### Hub
+
+* Formato `prueba`, sin contenido: lo pone el agente. A los agentes anteriores
+  a la 0.2.0 se les degrada a texto.
+
+### Sitio
+
+* Las impresoras se pueden filtrar por computadora.
+
 ## 0.1.0 — 2026-09-04
 
 Primera versión pública.
