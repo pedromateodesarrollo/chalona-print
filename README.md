@@ -28,16 +28,26 @@ VPN, ni redirección de puertos en casa del cliente.
 
 ## Instalar el agente
 
-Bájate el ejecutable, córrelo y contesta dos cosas: la dirección del hub y una
-llave de API.
+Los ejecutables están en
+[releases](https://github.com/pedromateodesarrollo/chalona-print/releases), y tu
+propio hub los sirve en `/descargas/` una vez publicados.
+
+En Windows basta con hacer doble clic: abre un asistente en el navegador, se
+registra, se instala como servicio de arranque y deja un icono junto al reloj.
+
+En Linux y macOS, una línea:
+
+```bash
+curl -fsSL https://tu-hub/descargas/instalar.sh | sudo bash -s -- \
+  --hub https://tu-hub --llave cpk_...
+```
+
+O a mano, con el binario ya bajado:
 
 ```bash
 chalona-print-agente configurar --hub https://print.chalonasoft.com --llave cpk_...
 chalona-print-agente instalar
 ```
-
-En Windows basta con hacer doble clic: abre un asistente en el navegador, se
-registra, se instala como tarea de arranque y deja un icono junto al reloj.
 
 ## Imprimir
 
