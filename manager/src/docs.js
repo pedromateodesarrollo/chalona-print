@@ -370,6 +370,33 @@ export const puntos = [
     acceso: 'público',
     resumen: 'Baja un ejecutable o el script de instalación.',
   },
+  {
+    grupo: 'Descargas',
+    metodo: 'POST',
+    ruta: '/v1/descargas/:archivo',
+    acceso: 'admin de la organización publicadora',
+    resumen: 'Publica un ejecutable. El cuerpo son los bytes, sin envolver.',
+    nota:
+      'Solo se aceptan los nombres conocidos del agente y los dos instaladores: ' +
+      'la carpeta se sirve sin credencial, y admitir un nombre cualquiera sería ' +
+      'admitir escritura en ella. Y solo publica la organización que levantó el ' +
+      'hub (`PRINT_ORG_PUBLICADORA`, por defecto 1): las descargas son del hub ' +
+      'entero, no de una organización. Lo usan `agente/publicar.ps1` y ' +
+      '`agente/publicar.sh`; **compara el sha256 que devuelve** con el del ' +
+      'archivo local antes de darlo por publicado.',
+    respuesta: `{ "archivo": "…", "url": "/descargas/…", "bytes": 7617144, "sha256": "…" }`,
+    ejemplo: `curl -X POST https://TU-HUB/v1/descargas/chalona-print-agente-linux-x64 \\
+  -H "authorization: Bearer cpk_admin" \\
+  -H "content-type: application/octet-stream" \\
+  --data-binary @chalona-print-agente-linux-x64`,
+  },
+  {
+    grupo: 'Descargas',
+    metodo: 'DELETE',
+    ruta: '/v1/descargas/:archivo',
+    acceso: 'admin de la organización publicadora',
+    resumen: 'Retira un ejecutable publicado.',
+  },
 
   // --------------------------------------------------------------- salud
   {
@@ -387,6 +414,7 @@ export const errores = [
   ['404', '`impresora_no_encontrada`', 'Ni por id ni por nombre'],
   ['409', '`impresora_ambigua`', 'Dos impresoras con ese nombre; manda el id'],
   ['409', '`dominio_en_uso`', 'El dominio todavía tiene agentes o llaves'],
+  ['403', '`no_publicas_aqui`', 'Publicar descargas es de la organización que levantó el hub'],
   ['409', '`impresora_ausente`', 'El agente ya no la ve en su sistema'],
   ['413', '`contenido_grande`', 'Pasa del tope del hub'],
   ['415', '`formato_no_soportado`', 'Esa impresora no admite ese formato'],

@@ -122,13 +122,16 @@ class Respuesta {
 typedef Manejador = FutureOr<Respuesta> Function(Peticion p);
 
 class _Ruta {
-  _Ruta(this.metodo, String patron, this.manejador, this.acceso)
+  _Ruta(this.metodo, String patron, this.manejador, this.acceso, this.crudo)
     : partes = patron.split('/').where((s) => s.isNotEmpty).toList();
 
   final String metodo;
   final List<String> partes;
   final Manejador manejador;
   final Acceso acceso;
+
+  /// El cuerpo no es JSON y lo lee el manejador (una subida de archivo).
+  final bool crudo;
 
   Map<String, String>? casa(String metodoPet, List<String> ruta) {
     if (metodoPet != metodo || ruta.length != partes.length) return null;
@@ -162,7 +165,8 @@ class Servidor {
     String patron,
     Manejador manejador, {
     Acceso acceso = Acceso.usuario,
-  }) => _rutas.add(_Ruta(metodo, patron, manejador, acceso));
+    bool crudo = false,
+  }) => _rutas.add(_Ruta(metodo, patron, manejador, acceso, crudo));
 
   Future<HttpServer> escuchar() async {
     final servidor = await HttpServer.bind(
@@ -215,7 +219,7 @@ class Servidor {
 
   Future<void> _corre(HttpRequest pet, _Ruta r, Map<String, String> params) async {
     Map<String, Object?> cuerpo = const {};
-    if (pet.method != 'GET' && pet.method != 'DELETE') {
+    if (!r.crudo && pet.method != 'GET' && pet.method != 'DELETE') {
       try {
         cuerpo = await _leeJson(pet);
       } on FormatException catch (e) {

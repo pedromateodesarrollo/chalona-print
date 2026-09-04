@@ -17,6 +17,7 @@ class Config {
     required this.ttlTrabajo,
     required this.rutaManager,
     required this.rutaDescargas,
+    required this.orgPublicadora,
     required this.secretoEfimero,
   });
 
@@ -50,6 +51,15 @@ class Config {
   /// enlace muerto.
   final String rutaDescargas;
 
+  /// Qué organización puede publicar ejecutables del agente.
+  ///
+  /// Las descargas son del hub entero, no de una organización: quien las
+  /// sustituye le cambia el programa a todo el que instale desde aquí. Por eso
+  /// no basta con ser administrador de una organización cualquiera —en un hub
+  /// con varias, eso sería dejar que un inquilino le reparta un binario a los
+  /// demás—. Por defecto es la organización 1, la que levantó el hub.
+  final int orgPublicadora;
+
   /// True cuando el secreto JWT se generó al arrancar (no venía por entorno).
   /// Vale para desarrollo; en producción significa que un reinicio saca a todos.
   final bool secretoEfimero;
@@ -64,6 +74,7 @@ class Config {
     'PRINT_TTL_HORAS      (24)',
     'PRINT_MANAGER        (ruta al manager compilado; por defecto ./manager)',
     'PRINT_DESCARGAS      (ruta a los ejecutables del agente; por defecto ./descargas)',
+    'PRINT_ORG_PUBLICADORA(qué organización puede publicar ejecutables; por defecto 1)',
   ];
 
   static String get ayuda => _reglas.join('\n  ');
@@ -97,6 +108,7 @@ class Config {
       ttlTrabajo: Duration(hours: int.tryParse(e['PRINT_TTL_HORAS'] ?? '') ?? 24),
       rutaManager: (e['PRINT_MANAGER'] ?? 'manager').trim(),
       rutaDescargas: (e['PRINT_DESCARGAS'] ?? 'descargas').trim(),
+      orgPublicadora: int.tryParse(e['PRINT_ORG_PUBLICADORA'] ?? '') ?? 1,
     );
   }
 

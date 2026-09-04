@@ -7,3 +7,6 @@ pubspec.lock
 .env
 node_modules/
 dist/
+chalona-print-agente
+chalona-print-agente-*
+chalona-print-hub

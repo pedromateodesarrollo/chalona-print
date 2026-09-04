@@ -1,8 +1,28 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
 
 import 'servidor.dart';
+
+/// Los únicos nombres que se aceptan al publicar.
+///
+/// La carpeta de descargas se sirve tal cual y sin credencial: dejar subir un
+/// nombre cualquiera sería dejar escribir en ella. Con la lista cerrada, lo
+/// peor que puede pasar es que se sustituya un archivo que ya existía —que es
+/// justo lo que hace publicar una versión nueva.
+const _publicables = {
+  'chalona-print-agente-windows-x64.exe',
+  'chalona-print-agente-linux-x64',
+  'chalona-print-agente-macos-arm64',
+  'chalona-print-agente-macos-x64',
+  'instalar.sh',
+  'instalar.ps1',
+};
+
+/// Tope de una subida. El agente pesa unos 8 MB; 64 deja sitio de sobra y evita
+/// que una petición mal formada llene el disco del servidor.
+const int _maxSubida = 64 * 1024 * 1024;
 
 /// Descargas del agente.
 ///
@@ -87,6 +107,72 @@ Future<List<Map<String, Object?>>> _listado(String carpeta) async {
   }
   salida.sort((a, b) => (a['archivo'] as String).compareTo(b['archivo'] as String));
   return salida;
+}
+
+/// Sube un ejecutable. Lo usan `agente/publicar.ps1` y `agente/publicar.sh`.
+void registraSubidaDescargas(Servidor s) {
+  s.ruta('POST', '/v1/descargas/:archivo', (p) async {
+    final nombre = p.params['archivo'] ?? '';
+    if (!_publicables.contains(nombre)) {
+      return Respuesta.falla(
+        400,
+        'nombre_no_publicable',
+        'Solo se publican: ${_publicables.join(", ")}',
+      );
+    }
+    if (p.s.org != p.config.orgPublicadora) {
+      return Respuesta.falla(
+        403,
+        'no_publicas_aqui',
+        'Las descargas son del hub, no de una organización. Publica con una '
+            'llave de la organización ${p.config.orgPublicadora}.',
+      );
+    }
+
+    final bytes = BytesBuilder(copy: false);
+    await for (final trozo in p.crudo) {
+      bytes.add(trozo);
+      if (bytes.length > _maxSubida) {
+        return Respuesta.falla(413, 'archivo_grande',
+            'El tope es ${_maxSubida ~/ (1024 * 1024)} MB');
+      }
+    }
+    final datos = bytes.takeBytes();
+    if (datos.isEmpty) {
+      return Respuesta.falla(400, 'archivo_vacio', 'No llegó nada');
+    }
+
+    final dir = Directory(p.config.rutaDescargas)..createSync(recursive: true);
+    final destino = File('${dir.path}${Platform.pathSeparator}$nombre');
+    // Se escribe al lado y se mueve: si la subida se corta a la mitad, nadie
+    // se baja medio ejecutable.
+    final parcial = File('${destino.path}.parcial')..writeAsBytesSync(datos);
+    parcial.renameSync(destino.path);
+    if (!Platform.isWindows && !nombre.endsWith('.ps1')) {
+      await Process.run('chmod', ['755', destino.path]);
+    }
+
+    final huella = sha256.convert(datos).toString();
+    return Respuesta.ok({
+      'archivo': nombre,
+      'url': '/descargas/$nombre',
+      'bytes': datos.length,
+      'sha256': huella,
+    });
+  }, acceso: Acceso.admin, crudo: true);
+
+  s.ruta('DELETE', '/v1/descargas/:archivo', (p) async {
+    final nombre = p.params['archivo'] ?? '';
+    if (!_publicables.contains(nombre)) {
+      return Respuesta.falla(400, 'nombre_no_publicable', '');
+    }
+    if (p.s.org != p.config.orgPublicadora) {
+      return Respuesta.falla(403, 'no_publicas_aqui', '');
+    }
+    final f = File('${p.config.rutaDescargas}${Platform.pathSeparator}$nombre');
+    if (f.existsSync()) f.deleteSync();
+    return Respuesta.vacio();
+  }, acceso: Acceso.admin);
 }
 
 String _sistema(String nombre) {

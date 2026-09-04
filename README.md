@@ -86,6 +86,29 @@ Necesita un Postgres y nada más. Las migraciones se aplican solas al arrancar.
 | `PRINT_TTL_HORAS` | 24 | Cuánto espera un trabajo antes de darse por perdido |
 | `PRINT_MANAGER` | `manager` | Carpeta del sitio compilado |
 
+## Publicar los ejecutables en tu hub
+
+El hub sirve los ejecutables del agente en `/descargas/`, y los scripts los
+compilan y los suben:
+
+```bash
+cd agente
+./publicar.sh --hub https://tu-hub --llave cpk_llave_admin      # Linux y macOS
+```
+
+```powershell
+cd agente
+.\publicar.ps1 -Hub https://tu-hub -Llave cpk_llave_admin       # Windows
+```
+
+Windows necesita su propia máquina: `dart compile exe` genera para el sistema
+donde corre y no cruza. Por eso hay dos scripts y no uno.
+
+Publicar está reservado a la organización que levantó el hub
+(`PRINT_ORG_PUBLICADORA`, por defecto la 1) y solo acepta los nombres conocidos
+del agente: la carpeta se sirve sin credencial, así que dejar subir cualquier
+nombre sería dejar escribir en ella.
+
 ## Cómo está armado
 
 | Carpeta | Qué hay |

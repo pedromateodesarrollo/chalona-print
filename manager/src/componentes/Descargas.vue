@@ -119,15 +119,15 @@ onMounted(async () => {
           El ejecutable de Windows todavía no está publicado en este hub.
         </p>
         <p class="apagado">
-          Se compila en Windows —Dart genera para el sistema donde corre, no
-          cruza—, así que sale del flujo de compilación del repositorio o de una
-          máquina Windows con el SDK:
+          Tiene que compilarse en una máquina Windows: Dart genera para el
+          sistema donde corre y no cruza. En esa máquina, con el SDK de Dart y
+          el repositorio, un solo comando compila y lo deja publicado aquí:
         </p>
         <pre>cd agente
-dart compile exe bin/chalona_print_agente.dart -o chalona-print-agente-windows-x64.exe</pre>
+.\publicar.ps1 -Hub {{ hub }} -Llave cpk_llave_admin</pre>
         <p class="apagado" style="font-size: 13px">
-          El archivo se deja en la carpeta de descargas del hub
-          (<code>PRINT_DESCARGAS</code>) y aparece aquí solo.
+          La llave tiene que ser de administrador. En cuanto termine, aparece en
+          esta página sin tocar nada más.
         </p>
       </template>
     </template>
@@ -146,10 +146,17 @@ dart compile exe bin/chalona_print_agente.dart -o chalona-print-agente-windows-x
 sudo ./{{ binario.archivo }} configurar --hub {{ hub }} --llave {{ clave }}
 sudo ./{{ binario.archivo }} instalar</pre>
       </template>
-      <p v-else class="aviso">
-        El ejecutable para {{ sistema === 'linux' ? 'Linux' : 'macOS' }} todavía
-        no está publicado en este hub.
-      </p>
+      <div v-else>
+        <p class="aviso">
+          El ejecutable para {{ sistema === 'linux' ? 'Linux' : 'macOS' }}
+          todavía no está publicado en este hub.
+        </p>
+        <p class="apagado" style="font-size: 13px">
+          Se compila y se publica desde una máquina de ese sistema:
+        </p>
+        <pre>cd agente
+./publicar.sh --hub {{ hub }} --llave cpk_llave_admin</pre>
+      </div>
     </template>
   </div>
 

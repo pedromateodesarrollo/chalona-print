@@ -49,6 +49,7 @@ class Hub {
     registraRutasAuth(servidor);
     registraRutasDominios(servidor);
     registraRutasDescargas(servidor);
+    registraSubidaDescargas(servidor);
     registraRutasAgentes(servidor, agentes);
     registraRutasImpresoras(servidor, agentes);
     registraRutasTrabajos(servidor, agentes, cola);
