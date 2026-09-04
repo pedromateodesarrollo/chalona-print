@@ -1,9 +1,12 @@
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { api } from '../api.js'
 
 const impresoras = ref([])
 const error = ref('')
+
+/// Id del agente por el que se filtra, o '' para todas.
+const computadora = ref('')
 const editando = ref(null)
 const nombreNuevo = ref('')
 const probando = ref(null)
@@ -39,9 +42,36 @@ function identidad(i) {
 /// Recién aparecida: es la que alguien acaba de enchufar y está buscando.
 const esNueva = (i) => Date.now() - new Date(i.creado).getTime() < 30 * 60 * 1000
 
+/// Las computadoras que aparecen, sacadas de las propias impresoras.
+///
+/// Se derivan de la lista en vez de pedir `/v1/agentes` aparte: así las
+/// opciones siempre son exactamente las que tienen algo que enseñar, y no
+/// aparece en el desplegable una máquina de la que no se ve ni una impresora.
+const computadoras = computed(() => {
+  const vistas = new Map()
+  for (const i of impresoras.value) {
+    if (!vistas.has(i.agente)) vistas.set(i.agente, i.agente_nombre)
+  }
+  return [...vistas].map(([id, nombre]) => ({ id, nombre }))
+})
+
+/// El filtro se aplica aquí y no en el API a propósito: pidiendo la lista
+/// completa, el desplegable conserva todas las opciones y cambiar de
+/// computadora es instantáneo, sin otra vuelta al servidor.
+const visibles = computed(() =>
+  computadora.value === ''
+    ? impresoras.value
+    : impresoras.value.filter((i) => String(i.agente) === computadora.value),
+)
+
 async function carga() {
   try {
     impresoras.value = (await api.get('/v1/impresoras')).impresoras
+    // Si la computadora filtrada desaparece —se dio de baja el agente—, se
+    // vuelve a «todas» en vez de dejar la tabla vacía sin explicación.
+    if (computadora.value && !computadoras.value.some((c) => String(c.id) === computadora.value)) {
+      computadora.value = ''
+    }
     error.value = ''
   } catch (e) {
     error.value = e.message
@@ -82,13 +112,25 @@ onUnmounted(() => clearInterval(temporizador))
 </script>
 
 <template>
-  <div class="cabecera-seccion"><h2>Impresoras</h2></div>
+  <div class="cabecera-seccion">
+    <h2>Impresoras</h2>
+    <!-- Con una sola computadora el filtro sobra y solo estorba. -->
+    <select v-if="computadoras.length > 1" v-model="computadora" style="width: auto">
+      <option value="">Todas las computadoras</option>
+      <option v-for="c in computadoras" :key="c.id" :value="String(c.id)">
+        {{ c.nombre }}
+      </option>
+    </select>
+  </div>
   <p v-if="error" class="aviso">{{ error }}</p>
   <p v-if="mensaje" class="exito">{{ mensaje }}</p>
 
   <p v-if="!impresoras.length" class="apagado">
     Todavía no hay ninguna. Instala el agente en la computadora que las tiene y
     aparecerán solas.
+  </p>
+  <p v-else-if="!visibles.length" class="apagado">
+    Esa computadora no tiene ninguna impresora ahora mismo.
   </p>
 
   <table v-else>
@@ -99,7 +141,7 @@ onUnmounted(() => clearInterval(temporizador))
       </tr>
     </thead>
     <tbody>
-      <tr v-for="i in impresoras" :key="i.id">
+      <tr v-for="i in visibles" :key="i.id">
         <td>
           <template v-if="editando === i.id">
             <input v-model="nombreNuevo" @keyup.enter="renombra(i)" style="max-width: 220px" />
