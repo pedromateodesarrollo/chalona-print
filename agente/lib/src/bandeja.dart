@@ -218,7 +218,14 @@ final class _BandejaWin {
     if (_hwnd == 0) throw StateError('CreateWindowEx falló');
 
     _icono = _cargaIcono();
-    _notifica(_nimAdd, titulo);
+    // Si el shell rechaza el icono no hay nada que enseñar, pero la ventana
+    // sigue creada y el proceso se quedaría vivo para siempre sin que se vea
+    // nada ni se diga nada. Mejor fallar aquí: quien llama abre el panel.
+    if (_notifica(_nimAdd, titulo) == 0) {
+      destroyWindow(_hwnd);
+      _hwnd = 0;
+      throw StateError('Shell_NotifyIcon NIM_ADD falló');
+    }
   }
 
   /// Un `.ico` junto al ejecutable si está; si no, el icono genérico del
@@ -243,7 +250,7 @@ final class _BandejaWin {
 
   void tooltip(String texto) => _notifica(_nimModify, texto);
 
-  void _notifica(int mensaje, String tip) {
+  int _notifica(int mensaje, String tip) {
     final datos = calloc<_NotifyIconData>();
     datos.ref
       ..cbSize = sizeOf<_NotifyIconData>()
@@ -257,8 +264,9 @@ final class _BandejaWin {
       datos.ref.szTip[i] = recortado.codeUnitAt(i);
     }
     datos.ref.szTip[recortado.length] = 0;
-    shellNotifyIcon(mensaje, datos);
+    final ok = shellNotifyIcon(mensaje, datos);
     calloc.free(datos);
+    return ok;
   }
 
   void bombea() {

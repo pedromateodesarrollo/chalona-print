@@ -39,12 +39,13 @@ Future<void> main(List<String> args) async {
       await _probar(opciones['impresora'] ?? '');
 
     case 'instalar':
-      await Servicio.instala(ConfigAgente.carga());
-      stdout.writeln('Servicio instalado.');
+      await _servicio(
+        () => Servicio.instala(ConfigAgente.carga()),
+        'Servicio instalado.',
+      );
 
     case 'desinstalar':
-      await Servicio.desinstala();
-      stdout.writeln('Servicio desinstalado.');
+      await _servicio(Servicio.desinstala, 'Servicio desinstalado.');
 
     case 'bandeja':
       await _bandeja();
@@ -144,7 +145,15 @@ Future<void> _correr() async {
     log.aviso('panel', 'no pude abrir el panel local: $e');
   }
 
-  for (final senal in [ProcessSignal.sigint, ProcessSignal.sigterm]) {
+  // Windows no tiene SIGTERM: `watch()` lo rechaza de forma asíncrona, así que
+  // el fallo no sale por el `catch` de aquí sino como excepción sin capturar
+  // que tumba el agente recién arrancado. Se para por otro camino —`schtasks
+  // /end` o cerrar la ventana— y ninguno pasa por aquí.
+  final senales = [
+    ProcessSignal.sigint,
+    if (!Platform.isWindows) ProcessSignal.sigterm,
+  ];
+  for (final senal in senales) {
     senal.watch().listen((_) async {
       log.info('agente', 'parando…');
       await cliente.detiene();
@@ -155,6 +164,28 @@ Future<void> _correr() async {
 
   log.info('agente', 'agente ${config.agente} · hub ${config.hub}');
   await cliente.corre();
+}
+
+/// Instalar y desinstalar tocan el sistema, y fallan por cosas que se
+/// arreglan: casi siempre falta ejecutar como administrador. Un volcado de pila
+/// de Dart no dice eso, y quien instala un agente de impresión no tiene por qué
+/// leerlo para enterarse.
+Future<void> _servicio(Future<void> Function() accion, String hecho) async {
+  try {
+    await accion();
+    stdout.writeln(hecho);
+  } catch (e) {
+    stderr.writeln('$e');
+    if (Platform.isWindows) {
+      stderr.writeln(
+        'La tarea del sistema se crea con permisos de administrador: abre la '
+        'consola con «Ejecutar como administrador» y repite el comando.',
+      );
+    } else {
+      stderr.writeln('Hace falta root: repite el comando con sudo.');
+    }
+    exitCode = 1;
+  }
 }
 
 Future<void> _impresoras() async {

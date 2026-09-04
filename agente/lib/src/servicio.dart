@@ -36,8 +36,15 @@ class Servicio {
 
   static Future<void> desinstala() async {
     if (Platform.isWindows) {
-      await _corre('schtasks', ['/delete', '/tn', nombre, '/f']);
-      await _corre('schtasks', ['/delete', '/tn', '$nombre-bandeja', '/f']);
+      // `/delete` borra la tarea pero no toca el proceso que ya está corriendo:
+      // sin el `/end` el agente sigue imprimiendo hasta que alguien reinicie,
+      // mientras systemd y launchd sí paran el suyo. Y se tolera que fallen: lo
+      // normal es desinstalar con la tarea parada, o con solo una de las dos
+      // puesta, y eso no es un error que contar.
+      for (final tarea in [nombre, '$nombre-bandeja']) {
+        await _intenta('schtasks', ['/end', '/tn', tarea]);
+        await _intenta('schtasks', ['/delete', '/tn', tarea, '/f']);
+      }
       return;
     }
     if (Platform.isLinux) {
@@ -135,6 +142,14 @@ WantedBy=multi-user.target
     File(_rutaPlist).writeAsStringSync(plist);
     await _corre('launchctl', ['load', '-w', _rutaPlist]);
     log.info('servicio', 'instalado en launchd');
+  }
+
+  static Future<void> _intenta(String bin, List<String> args) async {
+    try {
+      await _corre(bin, args);
+    } catch (e) {
+      log.aviso('servicio', '$e');
+    }
   }
 
   static Future<void> _corre(String bin, List<String> args) async {
