@@ -12,10 +12,10 @@ import 'servidor.dart';
 /// peor que puede pasar es que se sustituya un archivo que ya existía —que es
 /// justo lo que hace publicar una versión nueva.
 const _publicables = {
-  'chalona-print-agente-windows-x64.exe',
-  'chalona-print-agente-linux-x64',
-  'chalona-print-agente-macos-arm64',
-  'chalona-print-agente-macos-x64',
+  'print-server-agente-windows-x64.exe',
+  'print-server-agente-linux-x64',
+  'print-server-agente-macos-arm64',
+  'print-server-agente-macos-x64',
   'instalar.sh',
   'instalar.ps1',
 };
@@ -26,7 +26,7 @@ const int _maxSubida = 64 * 1024 * 1024;
 
 /// Descargas del agente.
 ///
-/// El panel le dice a la gente que corra `chalona-print-agente`; si el hub no
+/// El panel le dice a la gente que corra `print-server-agente`; si el hub no
 /// sirve ese archivo, la frase no lleva a ninguna parte. Aquí se publica lo que
 /// haya en la carpeta de descargas y se sirve tal cual.
 ///

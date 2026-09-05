@@ -14,7 +14,7 @@ import 'windows.dart';
 Driver eligeDriver(ConfigAgente config) {
   final pedido = config.driver.trim().toLowerCase();
   final salida = config.salidaFalsa.isEmpty
-      ? '${Directory.systemTemp.path}${Platform.pathSeparator}chalona-print'
+      ? '${Directory.systemTemp.path}${Platform.pathSeparator}print-server'
       : config.salidaFalsa;
 
   switch (pedido) {

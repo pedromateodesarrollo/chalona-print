@@ -1,4 +1,4 @@
-# chalona-print
+# print-server
 
 Imprime desde donde sea, en la impresora que quieras, sin abrir un puerto.
 
@@ -29,7 +29,7 @@ VPN, ni redirección de puertos en casa del cliente.
 ## Instalar el agente
 
 Los ejecutables están en
-[releases](https://github.com/pedromateodesarrollo/chalona-print/releases), y tu
+[releases](https://github.com/pedromateodesarrollo/print-server/releases), y tu
 propio hub los sirve en `/descargas/` una vez publicados.
 
 En Windows basta con hacer doble clic: abre un asistente en el navegador, se
@@ -45,8 +45,8 @@ curl -fsSL https://tu-hub/descargas/instalar.sh | sudo bash -s -- \
 O a mano, con el binario ya bajado:
 
 ```bash
-chalona-print-agente configurar --hub https://print.chalonasoft.com --llave cpk_...
-chalona-print-agente instalar
+print-server-agente configurar --hub https://print.chalonasoft.com --llave cpk_...
+print-server-agente instalar
 ```
 
 ## Imprimir
@@ -79,8 +79,8 @@ O a pelo:
 ```bash
 cd hub
 dart pub get
-PRINT_DATABASE_URL=postgres://usuario:clave@localhost:5432/chalona_print \
-  dart run bin/chalona_print_hub.dart
+PRINT_DATABASE_URL=postgres://usuario:clave@localhost:5432/print_server \
+  dart run bin/print_server_hub.dart
 ```
 
 Necesita un Postgres y nada más. Las migraciones se aplican solas al arrancar.

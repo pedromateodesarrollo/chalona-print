@@ -33,7 +33,7 @@ class Bandeja {
     if (!Platform.isWindows) return false;
     try {
       final win = _BandejaWin(
-        titulo: 'chalona-print',
+        titulo: 'print-server',
         alAbrirPanel: () => _abre(_urlPanel),
         alSalir: () {
           if (!_terminado.isCompleted) _terminado.complete();
@@ -78,13 +78,13 @@ class Bandeja {
       final res = await pet.close();
       final d = jsonDecode(await utf8.decoder.bind(res).join());
       c.close();
-      if (d is! Map) return 'chalona-print';
+      if (d is! Map) return 'print-server';
       final impresoras = (d['impresoras'] as List?)?.length ?? 0;
       return d['conectado'] == true
-          ? 'chalona-print — conectado · $impresoras impresora(s)'
-          : 'chalona-print — SIN CONEXIÓN con el hub';
+          ? 'print-server — conectado · $impresoras impresora(s)'
+          : 'print-server — SIN CONEXIÓN con el hub';
     } catch (_) {
-      return 'chalona-print — el servicio no responde';
+      return 'print-server — el servicio no responde';
     }
   }
 
@@ -201,7 +201,7 @@ final class _BandejaWin {
     _proc = NativeCallable<IntPtr Function(IntPtr, Uint32, IntPtr, IntPtr)>
         .isolateLocal(_wndProc, exceptionalReturn: 0);
 
-    final clase = 'ChalonaPrintBandeja'.toNativeUtf16();
+    final clase = 'PrintServerBandeja'.toNativeUtf16();
     final wc = calloc<_WndClassEx>();
     wc.ref
       ..cbSize = sizeOf<_WndClassEx>()
@@ -233,7 +233,7 @@ final class _BandejaWin {
   /// entre no tener icono y tener uno prestado, mejor prestado.
   int _cargaIcono() {
     final carpeta = File(Platform.resolvedExecutable).parent.path;
-    final ruta = '$carpeta\\chalona-print.ico';
+    final ruta = '$carpeta\\print-server.ico';
     if (File(ruta).existsSync()) {
       final p = ruta.toNativeUtf16();
       try {

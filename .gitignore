@@ -8,6 +8,6 @@ build/
 .env
 node_modules/
 dist/
-chalona-print-agente
-chalona-print-agente-*
-chalona-print-hub
+print-server-agente
+print-server-agente-*
+print-server-hub

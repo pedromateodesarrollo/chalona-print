@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Instalador del agente de chalona-print para Linux y macOS.
+# Instalador del agente de print-server para Linux y macOS.
 #
 #   curl -fsSL https://TU-HUB/descargas/instalar.sh | sudo bash -s -- \
 #     --hub https://TU-HUB --llave cpk_...
@@ -27,8 +27,8 @@ done
 [[ "$(id -u)" == "0" ]] || { echo "Corre esto con sudo: el servicio y la configuración van a rutas del sistema."; exit 77; }
 
 case "$(uname -s)" in
-  Linux)  ARCHIVO="chalona-print-agente-linux-x64";;
-  Darwin) ARCHIVO="chalona-print-agente-macos-arm64";;
+  Linux)  ARCHIVO="print-server-agente-linux-x64";;
+  Darwin) ARCHIVO="print-server-agente-macos-arm64";;
   *) echo "Sistema no soportado por este instalador: $(uname -s)"; exit 1;;
 esac
 
@@ -37,14 +37,14 @@ TMP="$(mktemp)"
 curl -fsSL "$HUB/descargas/$ARCHIVO" -o "$TMP" || {
   echo "No pude bajarlo. ¿Está publicado en $HUB/descargas/$ARCHIVO?"; exit 1; }
 
-install -m 0755 "$TMP" "$DESTINO/chalona-print-agente"
+install -m 0755 "$TMP" "$DESTINO/print-server-agente"
 rm -f "$TMP"
 
 echo "→ conectando con el hub"
-"$DESTINO/chalona-print-agente" configurar --hub "$HUB" --llave "$LLAVE" --nombre "$NOMBRE"
+"$DESTINO/print-server-agente" configurar --hub "$HUB" --llave "$LLAVE" --nombre "$NOMBRE"
 
 echo "→ instalando el servicio"
-"$DESTINO/chalona-print-agente" instalar
+"$DESTINO/print-server-agente" instalar
 
 echo
 echo "Listo. La computadora «$NOMBRE» ya aparece en el panel del hub."

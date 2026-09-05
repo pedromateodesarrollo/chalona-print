@@ -8,15 +8,15 @@ docker compose up -d bd
 
 # Hub
 cd hub && dart pub get
-PRINT_DATABASE_URL=postgres://print:print@localhost:5432/chalona_print \
-  dart run bin/chalona_print_hub.dart
+PRINT_DATABASE_URL=postgres://print:print@localhost:5432/print_server \
+  dart run bin/print_server_hub.dart
 
 # Sitio (proxy al hub local en :3071 — ajusta vite.config.js si usas otro puerto)
 cd manager && npm install && npm run dev
 
 # Agente, sin gastar papel
 cd agente && dart pub get
-PRINT_AGENTE_CONFIG=/tmp/agente.json dart run bin/chalona_print_agente.dart \
+PRINT_AGENTE_CONFIG=/tmp/agente.json dart run bin/print_server_agente.dart \
   configurar --hub http://localhost:3070 --llave cpk_...
 # y en /tmp/agente.json pon  "driver": "falso"
 ```

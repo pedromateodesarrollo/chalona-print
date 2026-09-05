@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -f hub/Dockerfile -t chalona-print-hub .
+      - run: docker build -f hub/Dockerfile -t print-server-hub .
 
   sitio:
     runs-on: ubuntu-latest

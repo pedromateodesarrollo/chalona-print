@@ -109,7 +109,7 @@ class Despachador {
       formato = 'texto';
       bytes = Uint8List.fromList(
         utf8.encode(
-          'chalona-print\r\n${t['impresora_nombre']}\r\n'
+          'print-server\r\n${t['impresora_nombre']}\r\n'
           '${DateTime.now()}\r\nprueba de impresion\r\n\r\n\r\n\f',
         ),
       );

@@ -1,4 +1,4 @@
-/// chalona-print — hub.
+/// print-server — hub.
 ///
 /// Junta las piezas: base de datos, REST, WebSocket de agentes y despachador
 /// de la cola. Un solo proceso; el que se auto-hospeda no tiene que orquestar

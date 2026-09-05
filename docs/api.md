@@ -1,4 +1,4 @@
-# API de chalona-print
+# API de print-server
 
 Todo lo que hace el panel se puede hacer por API: no hay nada reservado a la interfaz. La base es la dirección de tu hub, y las respuestas son JSON.
 
@@ -344,8 +344,8 @@ Público a propósito: una máquina que va a instalar el agente todavía no tien
 ```json
 {
   "descargas": [{
-    "archivo": "chalona-print-agente-linux-x64",
-    "url": "/descargas/chalona-print-agente-linux-x64",
+    "archivo": "print-server-agente-linux-x64",
+    "url": "/descargas/print-server-agente-linux-x64",
     "sistema": "linux",
     "bytes": 7617144,
     "sha256": "…"
@@ -372,10 +372,10 @@ Solo se aceptan los nombres conocidos del agente y los dos instaladores: la carp
 ```
 
 ```bash
-curl -X POST https://TU-HUB/v1/descargas/chalona-print-agente-linux-x64 \
+curl -X POST https://TU-HUB/v1/descargas/print-server-agente-linux-x64 \
   -H "authorization: Bearer cpk_admin" \
   -H "content-type: application/octet-stream" \
-  --data-binary @chalona-print-agente-linux-x64
+  --data-binary @print-server-agente-linux-x64
 ```
 
 ### `DELETE /v1/descargas/:archivo`

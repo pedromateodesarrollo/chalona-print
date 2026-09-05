@@ -1,4 +1,4 @@
-/// chalona-print — agente.
+/// print-server — agente.
 ///
 /// Corre en la computadora que tiene las impresoras: mantiene el WebSocket con
 /// el hub, imprime lo que llega y enseña un panel local con lo que está

@@ -62,17 +62,17 @@ class ConfigAgente {
     if (env != null && env.isNotEmpty) return env;
     if (Platform.isWindows) {
       final base = Platform.environment['ProgramData'] ?? r'C:\ProgramData';
-      return '$base\\chalona-print\\agente.json';
+      return '$base\\print-server\\agente.json';
     }
-    if (Platform.isMacOS) return '/usr/local/etc/chalona-print/agente.json';
-    return '/etc/chalona-print/agente.json';
+    if (Platform.isMacOS) return '/usr/local/etc/print-server/agente.json';
+    return '/etc/print-server/agente.json';
   }
 
   /// Lee la configuración. Si no se puede —no existe, o no hay permiso—
   /// devuelve una vacía en vez de reventar.
   ///
   /// El archivo es del root porque lleva la credencial del agente. Un técnico
-  /// que corra `chalona-print-agente impresoras` sin sudo no necesita esa
+  /// que corra `print-server-agente impresoras` sin sudo no necesita esa
   /// credencial para nada, y merece la lista de impresoras y no un volcado de
   /// pila. Los comandos que sí la necesitan avisan de que hace falta sudo.
   static ConfigAgente carga([String? ruta]) {

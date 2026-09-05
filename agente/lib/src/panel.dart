@@ -113,9 +113,9 @@ class Panel {
           id: -1,
           impresora: impresora,
           formato: 'texto',
-          nombre: 'Prueba de chalona-print',
+          nombre: 'Prueba de print-server',
           contenido: utf8.encode(
-            'chalona-print\nPrueba desde el panel local\n'
+            'print-server\nPrueba desde el panel local\n'
             '${DateTime.now()}\n\n\n',
           ),
         ),
@@ -172,7 +172,7 @@ class Panel {
   ''';
 
   String _paginaInstalar() => '''
-<!doctype html><meta charset="utf-8"><title>Instalar chalona-print</title>
+<!doctype html><meta charset="utf-8"><title>Instalar print-server</title>
 <style>$_estilo</style>
 <h1>Agente de impresión</h1>
 <p class="sub">Esta computadora todavía no está conectada a un hub.</p>
@@ -204,7 +204,7 @@ async function guardar() {
 ''';
 
   String _paginaEstado() => '''
-<!doctype html><meta charset="utf-8"><title>chalona-print — ${config.nombre}</title>
+<!doctype html><meta charset="utf-8"><title>print-server — ${config.nombre}</title>
 <style>$_estilo</style>
 <h1>${config.nombre}</h1>
 <p class="sub">Agente de impresión · <span id="hub"></span></p>

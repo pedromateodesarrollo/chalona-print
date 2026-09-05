@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # Compila el hub (AOT) e instala un servicio systemd.
 #
-#   ./deploy-hub.sh --local        → esta máquina: /opt/chalona-print-hub + systemd
+#   ./deploy-hub.sh --local        → esta máquina: /opt/print-server-hub + systemd
 #   ./deploy-hub.sh --produccion   → servidor remoto por SSH (DEPLOY_HOST)
 #
 # Requiere dart en PATH y, para --produccion, acceso SSH con sudo.
-# La URL de la base y el secreto JWT viven en /etc/chalona-print-hub.env (640).
+# La URL de la base y el secreto JWT viven en /etc/print-server-hub.env (640).
 [[ -n "$BASH_VERSION" ]] || exec bash "$0" "$@"
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Sin valor por defecto a propósito: un despliegue tiene que decir a dónde va.
 readonly DEPLOY_HOST="${DEPLOY_HOST:-}"
-readonly INSTALL_DIR="${INSTALL_DIR:-/opt/chalona-print-hub}"
-readonly SERVICE_NAME="chalona-print-hub"
-readonly BINARY_NAME="chalona-print-hub"
+readonly INSTALL_DIR="${INSTALL_DIR:-/opt/print-server-hub}"
+readonly SERVICE_NAME="print-server-hub"
+readonly BINARY_NAME="print-server-hub"
 readonly PORT="${PORT:-3070}"
 
 usage() {
@@ -32,19 +32,19 @@ compila() {
   echo "→ compilando (AOT)…"
   cd "$SCRIPT_DIR"
   dart pub get >/dev/null
-  dart compile exe bin/chalona_print_hub.dart -o "/tmp/$BINARY_NAME"
+  dart compile exe bin/print_server_hub.dart -o "/tmp/$BINARY_NAME"
 }
 
 unidad() {
   cat <<UNIDAD
 [Unit]
-Description=Hub de impresión chalona-print
+Description=Hub de impresión print-server
 After=network.target postgresql.service
 
 [Service]
 Type=simple
 WorkingDirectory=$INSTALL_DIR
-EnvironmentFile=/etc/chalona-print-hub.env
+EnvironmentFile=/etc/print-server-hub.env
 ExecStart=$INSTALL_DIR/$BINARY_NAME
 Restart=on-failure
 RestartSec=5

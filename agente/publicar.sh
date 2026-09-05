@@ -23,14 +23,14 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$(uname -s)" in
-  Linux)  ARCHIVO="chalona-print-agente-linux-x64";;
-  Darwin) ARCHIVO="chalona-print-agente-macos-$([[ "$(uname -m)" == arm64 ]] && echo arm64 || echo x64)";;
+  Linux)  ARCHIVO="print-server-agente-linux-x64";;
+  Darwin) ARCHIVO="print-server-agente-macos-$([[ "$(uname -m)" == arm64 ]] && echo arm64 || echo x64)";;
   *) echo "Para Windows usa publicar.ps1 en una máquina Windows."; exit 1;;
 esac
 
 echo "→ compilando $ARCHIVO"
 dart pub get >/dev/null
-dart compile exe bin/chalona_print_agente.dart -o "$ARCHIVO"
+dart compile exe bin/print_server_agente.dart -o "$ARCHIVO"
 
 LOCAL="$(sha256sum "$ARCHIVO" 2>/dev/null | cut -d' ' -f1 || shasum -a 256 "$ARCHIVO" | cut -d' ' -f1)"
 echo "   $(du -h "$ARCHIVO" | cut -f1) · sha256 ${LOCAL:0:16}…"

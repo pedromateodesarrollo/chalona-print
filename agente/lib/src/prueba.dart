@@ -57,7 +57,7 @@ class Prueba {
         return Uint8List.fromList(
           latin1.encode(
             'N\n'
-            'A30,30,0,4,1,1,N,"CHALONA-PRINT"\n'
+            'A30,30,0,4,1,1,N,"PRINT-SERVER"\n'
             'A30,110,0,3,1,1,N,"${_epl(nombre)}"\n'
             'A30,170,0,2,1,1,N,"$fecha"\n'
             'A30,220,0,2,1,1,N,"prueba de impresion"\n'
@@ -69,7 +69,7 @@ class Prueba {
         return Uint8List.fromList(
           latin1.encode(
             '^XA\n'
-            '^FO30,30^A0N,45,45^FDCHALONA-PRINT^FS\n'
+            '^FO30,30^A0N,45,45^FDPRINT-SERVER^FS\n'
             '^FO30,100^A0N,30,30^FD${_zpl(nombre)}^FS\n'
             '^FO30,150^A0N,28,28^FD$fecha^FS\n'
             '^FO30,195^A0N,28,28^FDprueba de impresion^FS\n'
@@ -82,7 +82,7 @@ class Prueba {
         // que hace que la hoja salga en vez de quedarse esperando en el búfer.
         return Uint8List.fromList(
           latin1.encode(
-            'chalona-print\r\n'
+            'print-server\r\n'
             '$nombre\r\n'
             '$fecha\r\n'
             'prueba de impresion\r\n'

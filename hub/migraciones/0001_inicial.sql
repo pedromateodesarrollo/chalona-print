@@ -1,8 +1,8 @@
--- chalona-print — esquema inicial.
+-- print-server — esquema inicial.
 --
 -- Todo vive en el esquema `print` para que el hub pueda compartir base de
 -- datos con otra aplicación sin pisarle las tablas. Nada aquí depende de
--- Chalona: quien clone el repo levanta este archivo en un Postgres vacío y ya.
+-- Nota: quien clone el repo levanta este archivo en un Postgres vacío y ya.
 --
 -- El aislamiento entre organizaciones lo aplica el código (toda consulta
 -- filtra por `org`). No hay RLS a propósito: el hub conecta con un solo rol y

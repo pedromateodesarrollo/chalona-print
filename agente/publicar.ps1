@@ -18,11 +18,11 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$archivo = 'chalona-print-agente-windows-x64.exe'
+$archivo = 'print-server-agente-windows-x64.exe'
 
 Write-Host '-> compilando'
 dart pub get | Out-Null
-dart compile exe bin/chalona_print_agente.dart -o $archivo
+dart compile exe bin/print_server_agente.dart -o $archivo
 if ($LASTEXITCODE -ne 0) { throw 'La compilación falló.' }
 
 $local = (Get-FileHash $archivo -Algorithm SHA256).Hash.ToLower()

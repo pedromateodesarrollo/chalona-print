@@ -1,4 +1,4 @@
-# Instalador del agente de chalona-print para Windows.
+# Instalador del agente de print-server para Windows.
 #
 # En PowerShell como administrador:
 #   & ([scriptblock]::Create((irm https://TU-HUB/descargas/instalar.ps1))) `
@@ -23,12 +23,12 @@ if (-not $esAdmin) {
   throw 'Abre PowerShell como administrador y vuelve a correrlo.'
 }
 
-$destino = Join-Path $env:ProgramFiles 'chalona-print'
+$destino = Join-Path $env:ProgramFiles 'print-server'
 New-Item -ItemType Directory -Force -Path $destino | Out-Null
-$exe = Join-Path $destino 'chalona-print-agente.exe'
+$exe = Join-Path $destino 'print-server-agente.exe'
 
 Write-Host "-> bajando el agente de $Hub"
-Invoke-WebRequest -Uri "$Hub/descargas/chalona-print-agente-windows-x64.exe" `
+Invoke-WebRequest -Uri "$Hub/descargas/print-server-agente-windows-x64.exe" `
   -OutFile $exe -UseBasicParsing
 
 Write-Host '-> conectando con el hub'

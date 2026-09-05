@@ -13,15 +13,15 @@ WORKDIR /app
 COPY hub/pubspec.yaml hub/pubspec.lock ./
 RUN dart pub get
 COPY hub/ ./
-RUN dart compile exe bin/chalona_print_hub.dart -o /app/chalona-print-hub
+RUN dart compile exe bin/print_server_hub.dart -o /app/print-server-hub
 
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-WORKDIR /opt/chalona-print
-COPY --from=compilador /app/chalona-print-hub ./
+WORKDIR /opt/print-server
+COPY --from=compilador /app/print-server-hub ./
 COPY --from=compilador /app/migraciones ./migraciones
 COPY --from=sitio /sitio/dist ./manager
-ENV PRINT_MANAGER=/opt/chalona-print/manager
+ENV PRINT_MANAGER=/opt/print-server/manager
 EXPOSE 3070
-CMD ["./chalona-print-hub"]
+CMD ["./print-server-hub"]

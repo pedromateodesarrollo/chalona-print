@@ -2,7 +2,7 @@
 
 ## Reportar un fallo
 
-Escribe a **pedromateo.desarrollo@gmail.com** con «chalona-print» en el asunto.
+Escribe a **pedromateo.desarrollo@gmail.com** con «print-server» en el asunto.
 Si el fallo permite imprimir en impresoras ajenas, leer trabajos de otra
 organización o suplantar a un agente, dilo en la primera línea.
 

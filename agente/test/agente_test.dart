@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:chalona_print_agente/src/config.dart';
-import 'package:chalona_print_agente/src/driver.dart';
-import 'package:chalona_print_agente/src/hechos.dart';
-import 'package:chalona_print_agente/src/prueba.dart';
+import 'package:print_server_agente/src/config.dart';
+import 'package:print_server_agente/src/driver.dart';
+import 'package:print_server_agente/src/hechos.dart';
+import 'package:print_server_agente/src/prueba.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -59,7 +59,7 @@ void main() {
 
       // El texto acaba en avance de página; sin él la hoja se queda dentro.
       final texto = String.fromCharCodes(Prueba.contenido(ficha('Generic'), 'x'));
-      expect(texto, contains('chalona-print'));
+      expect(texto, contains('print-server'));
       expect(texto, endsWith('\f'));
     });
 
@@ -98,7 +98,7 @@ void main() {
   group('registro de lo ya impreso', () {
     late Directory temporal;
 
-    setUp(() => temporal = Directory.systemTemp.createTempSync('chalona-print'));
+    setUp(() => temporal = Directory.systemTemp.createTempSync('print-server'));
     tearDown(() => temporal.deleteSync(recursive: true));
 
     // Este registro es lo único que separa un reenvío de una etiqueta doble.

@@ -16,14 +16,14 @@ jobs:
       matrix:
         include:
           - so: ubuntu-latest
-            nombre: chalona-print-agente-linux-x64
-            salida: chalona-print-agente
+            nombre: print-server-agente-linux-x64
+            salida: print-server-agente
           - so: windows-latest
-            nombre: chalona-print-agente-windows-x64
-            salida: chalona-print-agente.exe
+            nombre: print-server-agente-windows-x64
+            salida: print-server-agente.exe
           - so: macos-latest
-            nombre: chalona-print-agente-macos-arm64
-            salida: chalona-print-agente
+            nombre: print-server-agente-macos-arm64
+            salida: print-server-agente
     runs-on: ${{ matrix.so }}
     steps:
       - uses: actions/checkout@v4
@@ -31,7 +31,7 @@ jobs:
       - working-directory: agente
         run: |
           dart pub get
-          dart compile exe bin/chalona_print_agente.dart -o ${{ matrix.salida }}
+          dart compile exe bin/print_server_agente.dart -o ${{ matrix.salida }}
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.nombre }}
@@ -45,10 +45,10 @@ jobs:
       - working-directory: hub
         run: |
           dart pub get
-          dart compile exe bin/chalona_print_hub.dart -o chalona-print-hub
+          dart compile exe bin/print_server_hub.dart -o print-server-hub
       - uses: actions/upload-artifact@v4
         with:
-          name: chalona-print-hub-linux-x64
+          name: print-server-hub-linux-x64
           path: |
-            hub/chalona-print-hub
+            hub/print-server-hub
             hub/migraciones

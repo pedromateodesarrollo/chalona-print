@@ -1,15 +1,15 @@
 import 'dart:io';
 
-import 'package:chalona_print_hub/hub.dart';
+import 'package:print_server_hub/hub.dart';
 
 /// Punto de entrada del hub.
 ///
-///   PRINT_DATABASE_URL=postgres://... chalona-print-hub
+///   PRINT_DATABASE_URL=postgres://... print-server-hub
 ///
 /// Sin argumentos: migra la base si hace falta y se pone a escuchar.
 Future<void> main(List<String> args) async {
   if (args.contains('--ayuda') || args.contains('-h')) {
-    stdout.writeln('chalona-print-hub\n\nVariables de entorno:\n  ${Config.ayuda}');
+    stdout.writeln('print-server-hub\n\nVariables de entorno:\n  ${Config.ayuda}');
     return;
   }
 

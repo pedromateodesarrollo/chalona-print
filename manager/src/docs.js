@@ -5,7 +5,7 @@
 // los tres meses.
 
 export const intro = {
-  titulo: 'API de chalona-print',
+  titulo: 'API de print-server',
   texto:
     'Todo lo que hace el panel se puede hacer por API: no hay nada reservado a la ' +
     'interfaz. La base es la dirección de tu hub, y las respuestas son JSON.',
@@ -358,8 +358,8 @@ export const puntos = [
       'tiene credencial ninguna.',
     respuesta: `{
   "descargas": [{
-    "archivo": "chalona-print-agente-linux-x64",
-    "url": "/descargas/chalona-print-agente-linux-x64",
+    "archivo": "print-server-agente-linux-x64",
+    "url": "/descargas/print-server-agente-linux-x64",
     "sistema": "linux",
     "bytes": 7617144,
     "sha256": "…"
@@ -388,10 +388,10 @@ export const puntos = [
       '`agente/publicar.sh`; **compara el sha256 que devuelve** con el del ' +
       'archivo local antes de darlo por publicado.',
     respuesta: `{ "archivo": "…", "url": "/descargas/…", "bytes": 7617144, "sha256": "…" }`,
-    ejemplo: `curl -X POST https://TU-HUB/v1/descargas/chalona-print-agente-linux-x64 \\
+    ejemplo: `curl -X POST https://TU-HUB/v1/descargas/print-server-agente-linux-x64 \\
   -H "authorization: Bearer cpk_admin" \\
   -H "content-type: application/octet-stream" \\
-  --data-binary @chalona-print-agente-linux-x64`,
+  --data-binary @print-server-agente-linux-x64`,
   },
   {
     grupo: 'Descargas',

@@ -65,7 +65,7 @@ class AyudantePdfWindows {
 
   Future<void> imprime(TrabajoLocal t) async {
     final temporal = File(
-      '${Directory.systemTemp.path}\\chalona-print-${t.id}.${t.formato == "pdf" ? "pdf" : "img"}',
+      '${Directory.systemTemp.path}\\print-server-${t.id}.${t.formato == "pdf" ? "pdf" : "img"}',
     );
     temporal.writeAsBytesSync(t.contenido);
     try {

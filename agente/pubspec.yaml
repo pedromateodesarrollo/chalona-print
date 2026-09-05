@@ -1,5 +1,5 @@
-name: chalona_print_agente
-description: Agente de chalona-print — corre en la computadora que tiene las impresoras.
+name: print_server_agente
+description: Agente de print-server — corre en la computadora que tiene las impresoras.
 version: 0.1.0
 publish_to: none
 

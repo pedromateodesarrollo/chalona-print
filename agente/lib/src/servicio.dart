@@ -10,7 +10,7 @@ import 'log.dart';
 class Servicio {
   Servicio._();
 
-  static const nombre = 'chalona-print-agente';
+  static const nombre = 'print-server-agente';
 
   /// El ejecutable que está corriendo ahora mismo.
   static String get ejecutable => Platform.resolvedExecutable;
@@ -25,7 +25,7 @@ class Servicio {
     if (esDesarrollo) {
       throw StateError(
         'Estás corriendo con `dart run`: compila primero con '
-        '`dart compile exe bin/chalona_print_agente.dart -o chalona-print-agente`.',
+        '`dart compile exe bin/print_server_agente.dart -o print-server-agente`.',
       );
     }
     if (Platform.isWindows) return _instalaWindows();
@@ -100,7 +100,7 @@ class Servicio {
   static Future<void> _instalaSystemd() async {
     final unidad = '''
 [Unit]
-Description=Agente de impresión chalona-print
+Description=Agente de impresión print-server
 After=network-online.target cups.service
 Wants=network-online.target
 
@@ -124,14 +124,14 @@ WantedBy=multi-user.target
 
   // ------------------------------------------------------------------- macOS
 
-  static const _rutaPlist = '/Library/LaunchDaemons/com.chalona.print.agente.plist';
+  static const _rutaPlist = '/Library/LaunchDaemons/com.chalona.print-server.agente.plist';
 
   static Future<void> _instalaLaunchd() async {
     final plist = '''
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
-  <key>Label</key><string>com.chalona.print.agente</string>
+  <key>Label</key><string>com.chalona.print-server.agente</string>
   <key>ProgramArguments</key><array>
     <string>$ejecutable</string><string>correr</string>
   </array>

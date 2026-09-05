@@ -1,7 +1,7 @@
 /// Cliente del API. Guarda el token en localStorage y traduce los errores del
 /// hub a excepciones con el mensaje que ya viene traducido del servidor.
 
-const CLAVE_TOKEN = 'chalona-print-token'
+const CLAVE_TOKEN = 'print-server-token'
 
 export const sesion = {
   get token() { return localStorage.getItem(CLAVE_TOKEN) || '' },

@@ -1,4 +1,4 @@
-import 'package:chalona_print_hub/src/seguridad.dart';
+import 'package:print_server_hub/src/seguridad.dart';
 import 'package:test/test.dart';
 
 void main() {

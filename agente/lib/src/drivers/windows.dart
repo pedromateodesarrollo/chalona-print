@@ -55,7 +55,7 @@ class DriverWindows implements Driver {
       for (var c = 0; c < t.copias; c++) {
         Winspool.imprimeCrudo(
           impresora: t.impresora,
-          documento: t.nombre.isEmpty ? 'chalona-print' : t.nombre,
+          documento: t.nombre.isEmpty ? 'print-server' : t.nombre,
           datos: t.contenido,
         );
       }

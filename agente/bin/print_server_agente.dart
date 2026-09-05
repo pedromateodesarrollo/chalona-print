@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:chalona_print_agente/agente.dart';
-import 'package:chalona_print_agente/src/bandeja.dart';
-import 'package:chalona_print_agente/src/drivers/elige.dart';
-import 'package:chalona_print_agente/src/servicio.dart';
+import 'package:print_server_agente/agente.dart';
+import 'package:print_server_agente/src/bandeja.dart';
+import 'package:print_server_agente/src/drivers/elige.dart';
+import 'package:print_server_agente/src/servicio.dart';
 
-/// Agente de chalona-print.
+/// Agente de print-server.
 ///
 /// Ejecutarlo sin argumentos hace lo que haga falta: si la computadora todavía
 /// no está conectada, abre el asistente en el navegador; si ya lo está pero no
@@ -24,7 +24,7 @@ Future<void> main(List<String> args) async {
       stdout.writeln(_ayuda);
 
     case '--version':
-      stdout.writeln('chalona-print-agente $agenteVersion');
+      stdout.writeln('print-server-agente $agenteVersion');
 
     case 'configurar':
       await _configurar(opciones);
@@ -63,7 +63,7 @@ Future<void> main(List<String> args) async {
 }
 
 const _ayuda = '''
-chalona-print-agente — imprime en esta computadora lo que le manda el hub.
+print-server-agente — imprime en esta computadora lo que le manda el hub.
 
   (sin argumentos)     Instala o abre el panel, según haga falta
   configurar           --hub <url> --llave <cpk_...> [--nombre <texto>]
@@ -126,7 +126,7 @@ Future<void> _correr() async {
   if (!config.configurado) {
     stderr.writeln(
       'Esta computadora no está conectada a ningún hub. '
-      'Usa: chalona-print-agente configurar --hub <url> --llave <cpk_...>',
+      'Usa: print-server-agente configurar --hub <url> --llave <cpk_...>',
     );
     exitCode = 78; // EX_CONFIG
     return;
@@ -228,8 +228,8 @@ Future<void> _probar(String impresora) async {
         id: -1,
         impresora: destino,
         formato: 'texto',
-        nombre: 'Prueba de chalona-print',
-        contenido: utf8.encode('chalona-print\nPrueba\n${DateTime.now()}\n\n\n'),
+        nombre: 'Prueba de print-server',
+        contenido: utf8.encode('print-server\nPrueba\n${DateTime.now()}\n\n\n'),
       ),
     );
     stdout.writeln('Mandada a «$destino».');

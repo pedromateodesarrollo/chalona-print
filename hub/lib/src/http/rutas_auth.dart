@@ -20,7 +20,7 @@ void registraRutasAuth(Servidor s) {
 
   s.ruta('GET', '/salud', (p) async {
     await p.bd.fila('select 1 as ok');
-    return Respuesta.ok({'ok': true, 'servicio': 'chalona-print'});
+    return Respuesta.ok({'ok': true, 'servicio': 'print-server'});
   }, acceso: Acceso.publico);
 
   // Alta de organización. Solo con PRINT_REGISTRO=abierto; en una instalación

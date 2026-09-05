@@ -11,7 +11,7 @@ let temporizador
 
 // Prueba de impresión desde el panel: es la pregunta de todo el que acaba de
 // instalar un agente.
-const prueba = ref({ impresora: '', texto: 'Prueba de chalona-print' })
+const prueba = ref({ impresora: '', texto: 'Prueba de print-server' })
 const mensaje = ref('')
 
 const color = (e) =>

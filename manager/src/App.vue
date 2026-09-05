@@ -27,7 +27,7 @@ const enPanel = computed(() => ruta.value.startsWith('/panel'))
 <template>
   <header class="barra">
     <div class="contenedor">
-      <a href="#/" class="logo">chalona<span>-print</span></a>
+      <a href="#/" class="logo">print<span>-server</span></a>
       <nav>
         <a href="#/" :class="{ activo: !enDocs && !enPanel }">Inicio</a>
         <a href="#/docs" :class="{ activo: enDocs }">Documentación</a>
@@ -40,7 +40,7 @@ const enPanel = computed(() => ruta.value.startsWith('/panel'))
 
   <footer class="pie" v-if="!enPanel">
     <div class="contenedor">
-      <span>chalona-print · software libre bajo Apache-2.0</span>
+      <span>print-server · software libre bajo Apache-2.0</span>
       <nav>
         <a href="#/docs">Documentación</a>
         <a href="#/panel">Panel</a>

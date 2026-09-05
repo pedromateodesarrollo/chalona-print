@@ -12,7 +12,7 @@ services:
     environment:
       POSTGRES_USER: print
       POSTGRES_PASSWORD: print
-      POSTGRES_DB: chalona_print
+      POSTGRES_DB: print_server
     volumes:
       - datos:/var/lib/postgresql/data
     healthcheck:
@@ -25,7 +25,7 @@ services:
     depends_on:
       bd: { condition: service_healthy }
     environment:
-      PRINT_DATABASE_URL: postgres://print:print@bd:5432/chalona_print
+      PRINT_DATABASE_URL: postgres://print:print@bd:5432/print_server
       PRINT_PUERTO: '3070'
       PRINT_SECRETO_JWT: cambia-esto-en-produccion
       PRINT_REGISTRO: abierto
