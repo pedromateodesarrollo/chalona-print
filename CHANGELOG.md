@@ -3,6 +3,21 @@
 Las versiones siguen [SemVer](https://semver.org/lang/es/). El número de
 protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
 
+## 0.2.3 — 2026-09-08
+
+### Agente
+
+* Las etiquetadoras Honeywell sin emulación en el nombre recibían texto plano.
+  El driver solo pone `- ESim` / `- ZSim` cuando hay emulación; en su lenguaje
+  nativo la cola se llama `- DP`, y ese nombre no tenía ninguna de las pistas
+  que buscábamos. «Honeywell PC42t (203 dpi) - DP» y «Honeywell PC42E-T
+  (203 dpi) - DP» caían a texto: la etiquetadora no sacaba nada y el trabajo
+  quedaba en «hecho» —el fallo silencioso de siempre—. Ahora se reconocen por
+  el sufijo `- DP` y por la familia del modelo (PC42, PC43, PD43, PM43), y se
+  les manda EPL, que es lo que respondieron en la prueba con las máquinas
+  delante. Una PC42t en `- ZSim` sigue recibiendo ZPL: la emulación declarada
+  manda sobre la familia.
+
 ## 0.2.2 — 2026-09-04
 
 ### Agente

@@ -12,6 +12,33 @@ import 'driver.dart';
 class Prueba {
   Prueba._();
 
+  /// Etiquetadoras que no dicen su emulación en el nombre de la cola.
+  ///
+  /// El driver de Honeywell solo nombra la emulación cuando la hay: `- ESim`
+  /// o `- ZSim`. Cuando la impresora viene en su lenguaje nativo la cola se
+  /// llama `- DP` (Direct Protocol), y entonces el nombre deja de tener la
+  /// palabra que buscábamos: «Honeywell PC42t (203 dpi) - DP» caía a texto,
+  /// que en una etiquetadora es exactamente el fallo silencioso que este
+  /// archivo existe para evitar. Se completa con la familia del modelo, que
+  /// sí está siempre: una PC42/PC43/PD43/PM43 es una etiquetadora se llame
+  /// como se llame la cola.
+  ///
+  /// Sale EPL y no Direct Protocol a propósito. El firmware de estas máquinas
+  /// autodetecta el lenguaje del trabajo, y EPL es lo que respondieron en la
+  /// prueba del 08SEP2026 sobre las dos colas `- DP` que había instaladas.
+  /// Emitir DP de verdad sería adivinar la sintaxis (nombres de fuente,
+  /// `INPUT OFF`/`PF`, origen del papel) contra un lenguaje que ante un
+  /// comando malo deja la impresora en error, justo mientras alguien está
+  /// comprobando que funciona; EPL ya está probado y su peor caso no es peor
+  /// que el de hoy.
+  static final _etiquetadoras = RegExp(
+    // PC42, PC43, PD43, PM43 — sin cerrar la palabra: existe la «PC42E-T».
+    r'\bp[cdm]4[23]'
+    // El sufijo del driver. El `(?![a-z])` es para no comerse «(203 - dpi)».
+    r'|-\s*dp(?![a-z])'
+    r'|direct protocol',
+  );
+
   /// Qué lenguaje habla, deducido del modelo y del nombre de la cola.
   ///
   /// Las pistas vienen del propio fabricante: Honeywell nombra sus emulaciones
@@ -34,7 +61,8 @@ class Prueba {
     }
     if (pistas.contains('esim') ||
         pistas.contains('epl') ||
-        pistas.contains('eltron')) {
+        pistas.contains('eltron') ||
+        _etiquetadoras.hasMatch(pistas)) {
       return 'epl';
     }
     return 'texto';

@@ -43,6 +43,46 @@ void main() {
       expect(Prueba.lenguaje(ficha('Generic / Text Only'), ''), 'texto');
     });
 
+    test('una etiquetadora sin emulación en el nombre no cae a texto', () {
+      // El driver de Honeywell solo pone `- ESim` / `- ZSim` cuando hay
+      // emulación; en su lenguaje nativo la cola se llama `- DP`. Estas dos
+      // existen en producción, imprimieron EPL en la prueba del 08SEP2026, y
+      // hasta este cambio recibían texto plano: no salía nada y el trabajo
+      // quedaba en «hecho».
+      expect(Prueba.lenguaje(null, 'Honeywell PC42t (203 dpi) - DP'), 'epl');
+      expect(Prueba.lenguaje(null, 'Honeywell PC42E-T (203 dpi) - DP'), 'epl');
+
+      // La familia del modelo basta aunque la cola esté renombrada a mano.
+      expect(Prueba.lenguaje(ficha('Honeywell PC43d'), 'etiquetas almacen'), 'epl');
+      expect(Prueba.lenguaje(ficha('Honeywell PD43'), ''), 'epl');
+      expect(Prueba.lenguaje(ficha('Honeywell PM43'), ''), 'epl');
+      expect(Prueba.lenguaje(null, 'PC42t Direct Protocol'), 'epl');
+    });
+
+    test('la emulación declarada manda sobre la familia del modelo', () {
+      // Una PC42t en ZSim habla ZPL: mandarle EPL por ser PC42 sería cambiar
+      // un fallo silencioso por otro.
+      expect(Prueba.lenguaje(null, 'Honeywell PC42t (203 dpi) - ZSim'), 'zpl');
+    });
+
+    test('las pistas de etiquetadora no se comen impresoras de página', () {
+      // `- dp` no puede tragarse el `dpi` que llevan medio los nombres de
+      // cola, ni `pc42` aparecer donde no hay etiquetadora.
+      expect(Prueba.lenguaje(null, 'HP LaserJet M404 (600 - dpi)'), 'texto');
+      expect(Prueba.lenguaje(null, 'Canon_MF450_Series'), 'texto');
+      expect(Prueba.lenguaje(ficha('Generic / Text Only'), 'Recepcion'), 'texto');
+    });
+
+    test('la etiquetadora sin emulación sale con envoltura EPL, no con texto', () {
+      const cola = 'Honeywell PC42t (203 dpi) - DP';
+      final salida = String.fromCharCodes(
+        Prueba.contenido(ficha('', sistema: cola), cola),
+      );
+      expect(salida, startsWith('N\n'));
+      expect(salida, contains('P1'));
+      expect(salida, isNot(contains('\f')));
+    });
+
     test('también mira el nombre de la cola cuando no hay modelo', () {
       expect(Prueba.lenguaje(null, 'PC42t-203-ESim'), 'epl');
       expect(Prueba.lenguaje(null, 'Canon_MF450_Series'), 'texto');
