@@ -88,6 +88,25 @@ void main() {
       expect(Prueba.lenguaje(null, 'Canon_MF450_Series'), 'texto');
     });
 
+    test('Fingerprint en el nombre sí es el lenguaje del firmware', () {
+      // `- DP` es el nombre del driver de Windows y puede mentir: el 17SEP2026
+      // dos colas con ese sufijo estaban una en ESim y otra en Direct Protocol
+      // de verdad. `Fingerprint`, en cambio, nombra el lenguaje del firmware.
+      expect(Prueba.lenguaje(ficha('Honeywell PC42t Fingerprint'), ''), 'dp');
+      // El sufijo del driver se queda en EPL, que es lo que responde la
+      // mayoría del parque instalado.
+      expect(Prueba.lenguaje(ficha('Honeywell PC42t (203 dpi) - DP'), ''), 'epl');
+    });
+
+    test('otras marcas de etiquetadora tampoco caen a texto', () {
+      // El texto plano no imprime NADA en una etiquetadora y el trabajo queda
+      // en «hecho»: falla en silencio, que es el peor resultado posible.
+      expect(Prueba.lenguaje(ficha('Beeprt BY-426-4'), ''), 'epl');
+      expect(Prueba.lenguaje(ficha('TSC TTP-244'), ''), 'epl');
+      // Una impresora de página sí se prueba con texto.
+      expect(Prueba.lenguaje(ficha('HP LaserJet 1020'), ''), 'texto');
+    });
+
     test('cada lenguaje sale con su envoltura', () {
       final epl = String.fromCharCodes(Prueba.contenido(ficha('… ESim'), 'x'));
       expect(epl, startsWith('N\n'));
@@ -96,6 +115,12 @@ void main() {
       final zpl = String.fromCharCodes(Prueba.contenido(ficha('ZDesigner'), 'x'));
       expect(zpl, startsWith('^XA'));
       expect(zpl, contains('^XZ'));
+
+      // Direct Protocol acaba en PF (printfeed); sin él la etiqueta no sale.
+      final dp = String.fromCharCodes(Prueba.contenido(ficha('… Fingerprint'), 'x'));
+      expect(dp, startsWith('PP '));
+      expect(dp, contains('PT "PRINT-SERVER"'));
+      expect(dp, endsWith('PF\r\n'));
 
       // El texto acaba en avance de página; sin él la hoja se queda dentro.
       final texto = String.fromCharCodes(Prueba.contenido(ficha('Generic'), 'x'));

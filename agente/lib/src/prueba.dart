@@ -23,28 +23,36 @@ class Prueba {
   /// sí está siempre: una PC42/PC43/PD43/PM43 es una etiquetadora se llame
   /// como se llame la cola.
   ///
-  /// Sale EPL y no Direct Protocol a propósito. El firmware de estas máquinas
-  /// autodetecta el lenguaje del trabajo, y EPL es lo que respondieron en la
-  /// prueba del 08SEP2026 sobre las dos colas `- DP` que había instaladas.
-  /// Emitir DP de verdad sería adivinar la sintaxis (nombres de fuente,
-  /// `INPUT OFF`/`PF`, origen del papel) contra un lenguaje que ante un
-  /// comando malo deja la impresora en error, justo mientras alguien está
-  /// comprobando que funciona; EPL ya está probado y su peor caso no es peor
-  /// que el de hoy.
+  /// Sale EPL y no Direct Protocol a propósito, aunque la cola diga `- DP`.
+  /// Ese sufijo es el del driver de Windows, no el del modo del firmware: el
+  /// 17SEP2026 dos colas con ese mismo nombre estaban una en ESim y otra en
+  /// Direct Protocol de verdad. Por nombre no se puede distinguir, así que se
+  /// elige EPL, que es lo que responde la mayoría del parque instalado.
   static final _etiquetadoras = RegExp(
     // PC42, PC43, PD43, PM43 — sin cerrar la palabra: existe la «PC42E-T».
     r'\bp[cdm]4[23]'
     // El sufijo del driver. El `(?![a-z])` es para no comerse «(203 - dpi)».
     r'|-\s*dp(?![a-z])'
-    r'|direct protocol',
+    r'|direct protocol'
+    // Otras marcas de etiquetadora que tampoco declaran lenguaje en la cola.
+    r'|intermec|datamax|sato|tsc|godex|argox|bixolon|citizen|beeprt',
   );
 
   /// Qué lenguaje habla, deducido del modelo y del nombre de la cola.
   ///
   /// Las pistas vienen del propio fabricante: Honeywell nombra sus emulaciones
   /// `ESim` (EPL) y `ZSim` (ZPL), y el driver de Zebra se llama `ZDesigner`.
-  /// No es infalible —una cola renombrada a mano puede despistar— pero acierta
-  /// en lo que hay instalado de verdad, y el peor caso es una hoja de texto.
+  ///
+  /// Lo que el nombre NO dice es en qué modo está el firmware. Dos colas
+  /// llamadas igual —`Honeywell PC42t (203 dpi) - DP`— resultaron estar una en
+  /// ESim y otra en Direct Protocol, así que el sufijo del driver es una pista
+  /// débil: dice para qué se instaló la cola, no qué habla la impresora.
+  ///
+  /// Por eso, cuando se reconoce una etiquetadora pero no su lenguaje, la
+  /// prueba sale en EPL y no en texto. Mandar texto a una etiquetadora no
+  /// imprime NADA y el trabajo queda en «hecho»: quien probó se queda mirando
+  /// una impresora muda sin un solo indicio de qué pasó. En EPL, si el modo no
+  /// coincide, la impresora al menos parpadea y eso ya orienta.
   static String lenguaje(ImpresoraLocal? i, String nombreCola) {
     final pistas = [
       i?.modelo ?? '',
@@ -59,6 +67,10 @@ class Prueba {
         pistas.contains('zebra')) {
       return 'zpl';
     }
+    // `Fingerprint` nombra el lenguaje del firmware, no el driver instalado:
+    // es la única pista del nombre que dice de verdad qué habla la impresora.
+    // El sufijo `- DP` es del driver de Windows y cae más abajo, en EPL.
+    if (pistas.contains('fingerprint')) return 'dp';
     if (pistas.contains('esim') ||
         pistas.contains('epl') ||
         pistas.contains('eltron') ||
@@ -105,6 +117,26 @@ class Prueba {
           ),
         );
 
+      case 'dp':
+        // Direct Protocol, que por debajo es Fingerprint: posición, fuente,
+        // texto y `PF` para que salga la etiqueta. Comprobado 17SEP2026 en una
+        // PC42t que venía de fábrica en este modo.
+        return Uint8List.fromList(
+          latin1.encode(
+            'PP 30,30\r\n'
+            'FT "Swiss 721 BT",24\r\n'
+            'PT "PRINT-SERVER"\r\n'
+            'PP 30,70\r\n'
+            'FT "Swiss 721 BT",12\r\n'
+            'PT "${_dp(nombre)}"\r\n'
+            'PP 30,100\r\n'
+            'PT "$fecha"\r\n'
+            'PP 30,130\r\n'
+            'PT "prueba de impresion"\r\n'
+            'PF\r\n',
+          ),
+        );
+
       default:
         // Texto para impresoras de página. El avance de página al final es lo
         // que hace que la hoja salga en vez de quedarse esperando en el búfer.
@@ -137,4 +169,7 @@ class Prueba {
 
   /// En ZPL, `^` y `~` son prefijos de comando.
   static String _zpl(String s) => s.replaceAll(RegExp(r'[\^~]'), '-');
+
+  /// En Direct Protocol el dato va entre comillas, como en EPL.
+  static String _dp(String s) => s.replaceAll('"', "'");
 }
