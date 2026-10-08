@@ -46,14 +46,20 @@ class Cliente {
   bool get conectado => _ws?.readyState == WebSocket.open;
 
   Future<void> corre() async {
+    // Para que el panel enseñe las impresoras desde el primer momento, y no
+    // cuando termine el primer intento de conexión.
+    await _inventario();
     while (!_parar) {
       try {
         await _sesion();
       } catch (e) {
-        ultimoError = '$e';
+        ultimoError = mensajeDeConexion(e);
         log.aviso('cliente', 'conexión caída: $e');
       }
       if (_parar) break;
+      // Sin hub también se miran las impresoras: el panel las enseña, y con la
+      // conexión caída es cuando más hace falta ver si al menos ellas están.
+      await _inventario();
       final espera = _espera();
       log.info('cliente', 'reintento en ${espera.inSeconds}s');
       await Future.delayed(espera);
@@ -223,4 +229,25 @@ class Cliente {
     }
     return ultimoInventario;
   }
+}
+
+/// El motivo de una conexión caída, para el panel y la ventana.
+///
+/// El registro guarda la excepción tal cual; esto es lo que lee quien está
+/// sentado delante, que necesita saber qué revisar y no «SocketException: The
+/// remote computer refused the network connection».
+String mensajeDeConexion(Object e) {
+  if (e is SocketException) {
+    return 'No pude llegar al hub: revisa la conexión a internet de esta '
+        'computadora. (${e.osError?.message.trim() ?? e.message})';
+  }
+  if (e is WebSocketException) {
+    return 'El hub no aceptó la conexión: ¿se dio de baja este agente o se '
+        'cambió su credencial? (${e.message})';
+  }
+  if (e is HandshakeException || e is TlsException) {
+    return 'El certificado del hub no es válido: revisa la fecha y hora de esta '
+        'computadora.';
+  }
+  return '$e';
 }

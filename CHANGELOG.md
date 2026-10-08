@@ -38,7 +38,11 @@ protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
   ZPL o texto), como la que manda el hub. Antes mandaba texto, que una
   etiquetadora no imprime.
 * Los fallos al conectar se explican en español y dicen qué revisar, sin
-  «Invalid argument(s)» ni «Bad state».
+  «Invalid argument(s)» ni «Bad state». También el «último error» de una
+  conexión caída; el registro sigue guardando la excepción tal cual.
+* Las impresoras se miran al arrancar y en cada reintento, no solo al
+  conectar con el hub: sin hub, el panel las enseñaba vacías justo cuando más
+  hacía falta verlas.
 * En Windows, `print-server-agente instalar` ya no crea tareas programadas:
   con el servicio puesto, serían dos agentes con la misma credencial.
 

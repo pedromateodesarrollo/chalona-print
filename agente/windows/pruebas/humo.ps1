@@ -112,15 +112,27 @@ if ($e) {
   Comprueba ($e.modo -eq 'servicio') "dice que corre como servicio ($($e.modo))"
   Comprueba ($e.version -eq '0.4.0') "versión del agente ($($e.version))"
   Comprueba ($e.agente -eq 99) 'conserva el número de agente de la conexión vieja'
-  Comprueba (@($e.impresoras).Count -ge 1) "ve impresoras ($(@($e.impresoras).Count))"
+  # Las mira al arrancar, aunque el hub no conteste.
+  for ($i = 0; $i -lt 10 -and @($e.impresoras).Count -eq 0; $i++) { Start-Sleep -Seconds 1; $e = Estado }
+  Comprueba (@($e.impresoras).Count -ge 1) "ve impresoras sin hub ($(@($e.impresoras).Count))"
   $p = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:7717/probar' -ContentType 'application/json' `
     -Body (@{ impresora = 'falsa-etiquetas' } | ConvertTo-Json)
   Comprueba ($p.ok) "página de prueba ($($p.lenguaje))"
   Comprueba (@(Get-ChildItem $salidaFalsa -ErrorAction SilentlyContinue).Count -ge 1) 'la prueba llegó a la impresora falsa'
 }
 # El hub inventado no contesta y el agente lo anota con tilde: si la salida no
-# llegara en UTF-8, aquí saldría «conexiÃ³n».
-Comprueba ((Get-Content (Join-Path $datos 'agente.log') -Raw -Encoding UTF8) -match 'conexión caída') 'registro en disco, en UTF-8'
+# llegara en UTF-8, aquí saldría «conexiÃ³n». En Windows, un puerto cerrado tarda
+# un par de segundos en rechazar: se espera a la línea antes de mirarla.
+$registro = Join-Path $datos 'agente.log'
+$linea = $null
+for ($i = 0; $i -lt 20 -and -not $linea; $i++) {
+  $linea = Get-Content $registro -Encoding UTF8 -ErrorAction SilentlyContinue | Where-Object { $_ -match 'conexi.{1,3}n ca' } | Select-Object -First 1
+  if (-not $linea) { Start-Sleep -Seconds 1 }
+}
+Write-Host "   $linea"
+Comprueba ($linea -match 'conexión caída') 'registro en disco, en UTF-8'
+$e = Estado
+Comprueba ($e -and $e.ultimo_error -match '^No pude llegar al hub') "último error en español ($($e.ultimo_error))"
 
 # ---------------------------------------------------------------------------
 Paso 'la ventana'

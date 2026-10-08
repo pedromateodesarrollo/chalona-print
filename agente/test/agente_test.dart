@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:print_server_agente/src/cliente.dart';
 import 'package:print_server_agente/src/config.dart';
 import 'package:print_server_agente/src/driver.dart';
 import 'package:print_server_agente/src/hechos.dart';
@@ -205,6 +206,22 @@ void main() {
     test('una página que no es un hub no sale como error de JSON', () {
       expect(mensajeDeAlta(const FormatException('Unexpected character')),
           contains('no es un hub'));
+    });
+  });
+
+  group('motivo de una conexión caída', () {
+    test('sin hub dice qué revisar y deja el motivo del sistema al final', () {
+      final m = mensajeDeConexion(const SocketException(
+        'Connection refused',
+        osError: OSError('The remote computer refused the network connection', 1225),
+      ));
+      expect(m, startsWith('No pude llegar al hub'));
+      expect(m, contains('refused'));
+    });
+
+    test('un hub que rechaza al agente lo dice', () {
+      expect(mensajeDeConexion(const WebSocketException('Connection was not upgraded')),
+          startsWith('El hub no aceptó la conexión'));
     });
   });
 }
