@@ -1,11 +1,11 @@
-# Instalador del agente de print-server para Windows.
+# Instalador del agente de print-server para Windows, sin ventana.
 #
 # En PowerShell como administrador:
 #   & ([scriptblock]::Create((irm https://TU-HUB/descargas/instalar.ps1))) `
 #       -Hub https://TU-HUB -Llave cpk_...
 #
-# Quien prefiera no pegar comandos: baja el .exe y haz doble clic. Hace lo
-# mismo, preguntando los dos datos en el navegador.
+# Quien prefiera no pegar comandos: baja el .exe y haz doble clic. Es el mismo
+# programa: abre una ventana, se conecta y queda como servicio de Windows.
 param(
   [Parameter(Mandatory = $true)][string]$Hub,
   [Parameter(Mandatory = $true)][string]$Llave,
@@ -23,22 +23,24 @@ if (-not $esAdmin) {
   throw 'Abre PowerShell como administrador y vuelve a correrlo.'
 }
 
-$destino = Join-Path $env:ProgramFiles 'print-server'
-New-Item -ItemType Directory -Force -Path $destino | Out-Null
-$exe = Join-Path $destino 'print-server-agente.exe'
-
-Write-Host "-> bajando el agente de $Hub"
+$exe = Join-Path $env:TEMP 'print-server-agente-windows-x64.exe'
+Write-Host "-> bajando print-server de $Hub"
 Invoke-WebRequest -Uri "$Hub/descargas/print-server-agente-windows-x64.exe" `
   -OutFile $exe -UseBasicParsing
 
-Write-Host '-> conectando con el hub'
-& $exe configurar --hub $Hub --llave $Llave --nombre $Nombre
-if ($LASTEXITCODE -ne 0) { throw 'No se pudo conectar con el hub.' }
-
-Write-Host '-> instalando el servicio'
-& $exe instalar
-if ($LASTEXITCODE -ne 0) { throw 'No se pudo instalar el servicio.' }
+Write-Host '-> conectando con el hub e instalando el servicio'
+$resultado = Join-Path $env:TEMP "print-server-$([guid]::NewGuid().ToString('N')).txt"
+# Es un programa de ventanas: sin -Wait, PowerShell no espera a que termine ni
+# se entera de cómo salió.
+$p = Start-Process -FilePath $exe -Wait -PassThru -ArgumentList @(
+  '--instalar', '--hub', "`"$Hub`"", '--llave', "`"$Llave`"", '--nombre', "`"$Nombre`"",
+  '--resultado', "`"$resultado`""
+)
+$mensaje = if (Test-Path $resultado) { Get-Content $resultado -Raw -Encoding UTF8 } else { '' }
+Remove-Item $resultado, $exe -ErrorAction SilentlyContinue
+if ($p.ExitCode -ne 0) { throw "No se pudo instalar: $mensaje" }
 
 Write-Host ''
-Write-Host "Listo. La computadora «$Nombre» ya aparece en el panel del hub."
-Write-Host 'Panel de esta máquina: http://127.0.0.1:7717'
+Write-Host $mensaje
+Write-Host "La computadora «$Nombre» ya aparece en el panel del hub."
+Write-Host 'Aquí se ve en «print-server», en el menú Inicio, o en el icono junto al reloj.'

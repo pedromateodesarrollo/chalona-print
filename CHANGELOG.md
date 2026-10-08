@@ -3,6 +3,45 @@
 Las versiones siguen [SemVer](https://semver.org/lang/es/). El número de
 protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
 
+## 0.4.0 — 2026-10-08
+
+### Agente en Windows: vuelve la ventana
+
+* Lo que se descarga para Windows ya no es el agente solo sino una ventana
+  (`agente/windows`, C# sobre .NET Framework 4.8, que viene con Windows 10 y
+  11) con el agente dentro. Se conecta desde ahí, enseña el estado, las
+  impresoras, la página de prueba y el registro, e instala o desinstala.
+* **Queda como servicio de Windows de verdad** y arranca con la máquina aunque
+  nadie inicie sesión. Con la 0.2 el doble clic no pedía permiso de
+  administrador: la tarea de arranque no se podía crear y el agente se quedaba
+  en primer plano, imprimía ese día y desaparecía al reiniciar. Ahora cada
+  acción que lo necesita pide permiso a Windows (los botones llevan el escudo).
+* El servicio vigila al agente y lo levanta si se cae, y lo mete en un «job»
+  de Windows: si el servicio muere, no queda un agente huérfano conectado con
+  la misma credencial.
+* La configuración, que lleva la credencial del agente, queda solo para SYSTEM
+  y administradores. Antes la heredaba de ProgramData y la podía leer
+  cualquier usuario de la computadora.
+* Lo que dice el agente queda en `ProgramData\print-server\agente.log`.
+* Instalar encima de una versión anterior la retira —las tareas programadas de
+  la 0.2 y el servicio de la 0.3.0— y trae su conexión, también desde la
+  carpeta de antes del cambio de nombre (`ProgramData\chalona-print`): no hace
+  falta una llave nueva.
+* La 0.3.0 fue la primera con ventana. Se instaló en varias computadoras, pero
+  su código nunca llegó a este repositorio; esta versión la rehace.
+* `instalar.ps1` usa el mismo paquete, sin ventana.
+
+### Agente
+
+* El panel local dice si el agente corre como servicio (`modo`).
+* La página de prueba del panel sale en el lenguaje de cada impresora (EPL,
+  ZPL o texto), como la que manda el hub. Antes mandaba texto, que una
+  etiquetadora no imprime.
+* Los fallos al conectar se explican en español y dicen qué revisar, sin
+  «Invalid argument(s)» ni «Bad state».
+* En Windows, `print-server-agente instalar` ya no crea tareas programadas:
+  con el servicio puesto, serían dos agentes con la misma credencial.
+
 ## 0.2.3 — 2026-09-08
 
 ### Agente

@@ -14,6 +14,15 @@ import 'package:print_server_agente/src/servicio.dart';
 /// hay servicio instalado, lo instala y arranca; si todo está en su sitio,
 /// enseña el panel.
 Future<void> main(List<String> args) async {
+  // En Windows la salida va en la página de códigos del sistema, y quien la
+  // lee por una tubería —el servicio que guarda el registro, la ventana que
+  // conecta— no tiene cómo saber cuál es. Quien lanza el agente lo pide en
+  // UTF-8 y así «Conexión» llega como «Conexión».
+  if (Platform.environment['PRINT_AGENTE_UTF8'] == '1') {
+    stdout.encoding = utf8;
+    stderr.encoding = utf8;
+  }
+
   final comando = args.isEmpty ? '' : args.first;
   final opciones = _opciones(args);
 
@@ -68,7 +77,8 @@ print-server-agente — imprime en esta computadora lo que le manda el hub.
   (sin argumentos)     Instala o abre el panel, según haga falta
   configurar           --hub <url> --llave <cpk_...> [--nombre <texto>]
   correr               Trabaja en primer plano (es lo que hace el servicio)
-  instalar             Deja el agente arrancando con la máquina
+  instalar             Deja el agente arrancando con la máquina (Linux y
+                       macOS; en Windows lo instala la ventana, print-server.exe)
   desinstalar          Lo quita
   impresoras           Enseña lo que ve del sistema
   probar               --impresora <nombre>: manda una página de prueba
@@ -107,7 +117,7 @@ Future<void> _configurar(Map<String, String> o) async {
     );
     stdout.writeln('Conectado a ${config.hub} como agente ${config.agente}.');
   } catch (e) {
-    stderr.writeln('$e');
+    stderr.writeln(mensajeDeAlta(e));
     exitCode = 1;
   }
 }

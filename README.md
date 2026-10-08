@@ -32,8 +32,12 @@ Los ejecutables están en
 [releases](https://github.com/pedromateodesarrollo/print-server/releases), y tu
 propio hub los sirve en `/descargas/` una vez publicados.
 
-En Windows basta con hacer doble clic: abre un asistente en el navegador, se
-registra, se instala como servicio de arranque y deja un icono junto al reloj.
+En Windows basta con hacer doble clic: se abre la ventana de print-server, se
+pega la llave y se pulsa «Conectar». Windows pide permiso una vez y queda
+instalado como servicio —arranca con la máquina aunque nadie inicie sesión—,
+con un icono junto al reloj. La misma ventana enseña después si está
+conectado, las impresoras y el registro. Detalles en
+[agente/windows](agente/windows/README.md).
 
 En Linux y macOS, una línea:
 

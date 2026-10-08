@@ -4,6 +4,7 @@ import 'package:print_server_agente/src/config.dart';
 import 'package:print_server_agente/src/driver.dart';
 import 'package:print_server_agente/src/hechos.dart';
 import 'package:print_server_agente/src/prueba.dart';
+import 'package:print_server_agente/src/registro.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -184,6 +185,26 @@ void main() {
       expect(h.contiene(8), isTrue);
       expect(h.contiene(1), isFalse);
       expect(Hechos.abre(ruta, maximo: 5).contiene(8), isTrue);
+    });
+  });
+
+  group('motivo de un alta fallida', () {
+    test('sin los prefijos en inglés de Dart', () {
+      expect(mensajeDeAlta(ArgumentError('La llave empieza por «cpk_»')),
+          'La llave empieza por «cpk_»');
+      expect(mensajeDeAlta(StateError('El hub rechazó el alta (401): llave')),
+          'El hub rechazó el alta (401): llave');
+    });
+
+    test('un fallo de red dice qué revisar, no el error del sistema', () {
+      final m = mensajeDeAlta(const SocketException('Failed host lookup'));
+      expect(m, contains('No pude llegar al hub'));
+      expect(m, isNot(contains('Failed')));
+    });
+
+    test('una página que no es un hub no sale como error de JSON', () {
+      expect(mensajeDeAlta(const FormatException('Unexpected character')),
+          contains('no es un hub'));
     });
   });
 }

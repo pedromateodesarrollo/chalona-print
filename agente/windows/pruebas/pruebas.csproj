@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Pruebas de lo que no necesita Windows: leer la configuración y el estado
+    del agente, citar argumentos y decidir qué enseña la ventana. Corren en
+    Linux, sin paquetes:  dotnet run
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Pruebas.cs" />
+    <Compile Include="../src/Json.cs;../src/Modelo.cs;../src/Argumentos.cs;../src/Situacion.cs" />
+  </ItemGroup>
+</Project>

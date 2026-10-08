@@ -3,6 +3,10 @@
 # El de Windows tiene que salir de aquí: `dart compile exe` genera para el
 # sistema donde corre, no cruza. Sin esta pieza haría falta una máquina Windows
 # a mano cada vez que se publica una versión.
+#
+# En Windows lo que se publica no es el agente solo sino el paquete con la
+# ventana (agente/windows): un .exe que al abrirlo conecta, se instala como
+# servicio y enseña cómo va.
 
 name: binarios del agente
 
@@ -18,9 +22,6 @@ jobs:
           - so: ubuntu-latest
             nombre: print-server-agente-linux-x64
             salida: print-server-agente
-          - so: windows-latest
-            nombre: print-server-agente-windows-x64
-            salida: print-server-agente.exe
           - so: macos-latest
             nombre: print-server-agente-macos-arm64
             salida: print-server-agente
@@ -36,6 +37,20 @@ jobs:
         with:
           name: ${{ matrix.nombre }}
           path: agente/${{ matrix.salida }}
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - shell: pwsh
+        run: agente/windows/compilar.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: print-server-agente-windows-x64
+          path: agente/windows/dist/print-server-agente-windows-x64.exe
 
   hub:
     runs-on: ubuntu-latest

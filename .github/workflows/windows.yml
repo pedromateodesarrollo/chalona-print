@@ -1,0 +1,54 @@
+# La ventana y el servicio de Windows (agente/windows).
+#
+# En Linux: las pruebas de la lógica y que compile. En Windows: el paquete de
+# verdad y una instalación de punta a punta (pruebas/humo.ps1) que instala el
+# servicio, quita una versión vieja simulada, imprime en la impresora falsa,
+# saca una captura de la ventana y desinstala. Lo de Windows no se puede probar
+# en ninguna otra parte, y es justo lo que se rompe sin avisar.
+
+name: windows
+
+on:
+  push:
+    paths: ['agente/**', '.github/workflows/windows.yml']
+  pull_request:
+    paths: ['agente/**', '.github/workflows/windows.yml']
+  workflow_dispatch:
+
+jobs:
+  ventana:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - name: pruebas
+        working-directory: agente/windows/pruebas
+        run: dotnet run -c Release
+      - name: compila
+        working-directory: agente/windows
+        run: dotnet build print-server.csproj -c Release -nologo
+
+  paquete:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - name: compila el paquete
+        shell: pwsh
+        run: agente/windows/compilar.ps1
+      - name: instala, imprime y desinstala
+        shell: pwsh
+        run: >-
+          agente/windows/pruebas/humo.ps1
+          -Paquete agente/windows/dist/print-server-agente-windows-x64.exe
+          -Capturas agente/windows/dist/capturas
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: print-server-windows
+          path: |
+            agente/windows/dist/print-server-agente-windows-x64.exe
+            agente/windows/dist/capturas/

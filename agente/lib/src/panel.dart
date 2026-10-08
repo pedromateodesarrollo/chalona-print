@@ -5,6 +5,7 @@ import 'cliente.dart';
 import 'config.dart';
 import 'driver.dart';
 import 'log.dart';
+import 'prueba.dart';
 import 'registro.dart';
 
 /// El panel local: lo que se abre al hacer clic en el icono de la bandeja.
@@ -65,6 +66,9 @@ class Panel {
     'agente': config.agente,
     'nombre': config.nombre,
     'version': agenteVersion,
+    // `servicio` cuando lo arranca el servicio de Windows. La ventana lo
+    // enseña: «corre como servicio» es lo que dice que sobrevive a un reinicio.
+    'modo': Platform.environment['PRINT_AGENTE_MODO'] ?? 'primer plano',
     'driver': cliente?.driver.nombre ?? config.driver,
     'conectado': cliente?.conectado ?? false,
     'conectado_desde': cliente?.conectadoDesde?.toIso8601String(),
@@ -93,13 +97,22 @@ class Panel {
       await registraAgente(config, hub: hub, llave: llave, nombre: nombre);
       await _json(pet, {'ok': true, 'agente': config.agente});
     } catch (e) {
-      await _json(pet, {'ok': false, 'mensaje': '$e'}, estado: 400);
+      await _json(pet, {'ok': false, 'mensaje': mensajeDeAlta(e)}, estado: 400);
     }
   }
 
   /// Impresión de prueba desde el panel. Es la primera pregunta de cualquier
   /// instalación: «¿esto imprime?».
+  ///
+  /// Sale la misma página que manda el hub con el formato `prueba`, en el
+  /// lenguaje de esa impresora. Texto plano a una etiquetadora no imprime nada
+  /// y aquí diría «mandada»: justo lo que no puede pasar en la primera prueba.
   Future<void> _prueba(HttpRequest pet) async {
+    if (pet.method != 'POST') {
+      pet.response.statusCode = 405;
+      await pet.response.close();
+      return;
+    }
     final cuerpo = jsonDecode(await utf8.decoder.bind(pet).join());
     final impresora = (cuerpo['impresora'] ?? '').toString();
     final c = cliente;
@@ -107,20 +120,22 @@ class Panel {
       await _json(pet, {'ok': false, 'mensaje': 'El agente no está configurado'}, estado: 400);
       return;
     }
+    ImpresoraLocal? ficha;
+    for (final i in c.ultimoInventario) {
+      if (i.sistema == impresora) ficha = i;
+    }
     try {
       await c.driver.imprime(
         TrabajoLocal(
           id: -1,
           impresora: impresora,
-          formato: 'texto',
+          formato: 'raw',
           nombre: 'Prueba de print-server',
-          contenido: utf8.encode(
-            'print-server\nPrueba desde el panel local\n'
-            '${DateTime.now()}\n\n\n',
-          ),
+          contenido: Prueba.contenido(ficha, impresora),
         ),
       );
-      await _json(pet, {'ok': true});
+      log.info('panel', 'prueba en ${Prueba.lenguaje(ficha, impresora)} a «$impresora»');
+      await _json(pet, {'ok': true, 'lenguaje': Prueba.lenguaje(ficha, impresora)});
     } catch (e) {
       await _json(pet, {'ok': false, 'mensaje': '$e'}, estado: 500);
     }

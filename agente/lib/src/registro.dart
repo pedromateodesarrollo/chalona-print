@@ -65,6 +65,30 @@ Future<void> registraAgente(
   }
 }
 
+/// El motivo de un alta fallida, dicho para quien está instalando.
+///
+/// `ArgumentError` y `StateError` llevan delante «Invalid argument(s):» y
+/// «Bad state:», y los fallos de red salen en el idioma del sistema o en
+/// inglés. Quien instala la computadora del almacén solo necesita saber qué
+/// revisar: la dirección, la llave o la conexión.
+String mensajeDeAlta(Object e) {
+  if (e is ArgumentError) return '${e.message}';
+  if (e is StateError) return e.message;
+  if (e is SocketException || e is HttpException) {
+    return 'No pude llegar al hub: revisa la dirección y que esta computadora '
+        'tenga internet.';
+  }
+  if (e is HandshakeException || e is TlsException) {
+    return 'El hub contestó, pero su certificado no es válido: revisa la '
+        'dirección (¿https?) y la fecha y hora de esta computadora.';
+  }
+  if (e is FormatException) {
+    return 'Lo que contestó esa dirección no es un hub de print-server: revisa '
+        'la dirección.';
+  }
+  return '$e';
+}
+
 String? _normaliza(String hub) {
   var v = hub.trim();
   if (v.isEmpty) return null;

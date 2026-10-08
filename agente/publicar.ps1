@@ -1,8 +1,10 @@
-# Compila el agente para Windows y lo publica en un hub.
+# Compila el paquete de Windows (la ventana con el agente dentro) y lo publica
+# en un hub.
 #
 # Windows es el único sistema donde el ejecutable tiene que salir de una
 # máquina Windows: `dart compile exe` genera para el sistema donde corre, y no
-# hay forma de cruzar. Este script es ese puente.
+# hay forma de cruzar. Este script es ese puente. (GitHub Actions también lo
+# compila: ver .github/workflows/binarios.yml.)
 #
 #   .\publicar.ps1 -Hub https://print.chalonasoft.com -Llave cpk_...
 #
@@ -18,16 +20,14 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$archivo = 'print-server-agente-windows-x64.exe'
+$nombre = 'print-server-agente-windows-x64.exe'
 
-Write-Host '-> compilando'
-dart pub get | Out-Null
-dart compile exe bin/print_server_agente.dart -o $archivo
-if ($LASTEXITCODE -ne 0) { throw 'La compilación falló.' }
+& (Join-Path $PSScriptRoot 'windows\compilar.ps1')
+$archivo = Join-Path $PSScriptRoot "windows\dist\$nombre"
 
 $local = (Get-FileHash $archivo -Algorithm SHA256).Hash.ToLower()
 $mb = [math]::Round((Get-Item $archivo).Length / 1MB, 1)
-Write-Host "   $archivo · $mb MB · sha256 $($local.Substring(0,16))…"
+Write-Host "   $nombre · $mb MB · sha256 $($local.Substring(0,16))…"
 
 if ($SoloCompilar) {
   Write-Host 'Listo (sin publicar).'
@@ -36,7 +36,7 @@ if ($SoloCompilar) {
 
 Write-Host "-> publicando en $Hub"
 try {
-  $r = Invoke-RestMethod -Method Post -Uri "$Hub/v1/descargas/$archivo" `
+  $r = Invoke-RestMethod -Method Post -Uri "$Hub/v1/descargas/$nombre" `
     -Headers @{ authorization = "Bearer $Llave" } `
     -ContentType 'application/octet-stream' -InFile $archivo
 } catch {

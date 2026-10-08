@@ -63,36 +63,19 @@ class Servicio {
 
   // ------------------------------------------------------------------ Windows
 
-  /// En Windows el agente queda como **tarea programada al arranque, con la
-  /// cuenta SYSTEM**, no como servicio del Administrador de servicios.
+  /// En Windows el agente lo instala la ventana (`agente/windows`): un
+  /// servicio de Windows de verdad, escrito en C#, que arranca este ejecutable
+  /// y lo vuelve a levantar si se cae.
   ///
-  /// La diferencia importa poco en la práctica —arranca con la máquina, sin que
-  /// nadie inicie sesión, y se reinicia si se cae— y evita el problema real:
-  /// un servicio de verdad tiene que atender llamadas del sistema desde otro
-  /// hilo, y el modelo de un solo hilo de Dart no puede sostener eso sin
-  /// arriesgarse a caídas raras en la máquina de un cliente.
-  ///
-  /// El icono de la bandeja va aparte, al iniciar sesión el usuario: un proceso
-  /// en la sesión 0, que es donde viven los servicios, **no puede pintar
-  /// iconos** en la barra de nadie.
+  /// Hasta la 0.2 este comando lo dejaba como tarea programada de SYSTEM. Se
+  /// quitó porque con el servicio puesto daría DOS agentes con la misma
+  /// credencial, peleándose los trabajos. `desinstalar` sí sigue quitando esas
+  /// tareas, para limpiar instalaciones viejas.
   static Future<void> _instalaWindows() async {
-    await _corre('schtasks', [
-      '/create', '/tn', nombre,
-      '/tr', '"$ejecutable" correr',
-      '/sc', 'onstart',
-      '/ru', 'SYSTEM',
-      '/rl', 'HIGHEST',
-      '/f',
-    ]);
-    await _corre('schtasks', [
-      '/create', '/tn', '$nombre-bandeja',
-      '/tr', '"$ejecutable" bandeja',
-      '/sc', 'onlogon',
-      '/rl', 'LIMITED',
-      '/f',
-    ]);
-    await _corre('schtasks', ['/run', '/tn', nombre]);
-    log.info('servicio', 'instalado como tarea al arranque y bandeja al inicio de sesión');
+    throw UnsupportedError(
+      'En Windows el agente se instala con la ventana: ejecuta print-server.exe '
+      '(lo que se descarga del hub para Windows) y pulsa «Conectar».',
+    );
   }
 
   // ------------------------------------------------------------------- Linux

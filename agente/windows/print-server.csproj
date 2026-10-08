@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    print-server para Windows: la ventana, el icono de la bandeja y el servicio
+    que mantiene vivo al agente. Un solo .exe con el agente (Dart) dentro.
+
+    .NET Framework 4.8 porque viene con Windows 10 y 11: el .exe corre sin
+    instalar nada más y pesa lo que el agente. Compila también en Linux.
+
+      dotnet build -c Release                       solo para comprobar que compila
+      pwsh compilar.ps1                             el paquete de verdad (en Windows)
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>print-server</AssemblyName>
+    <RootNamespace>PrintServer</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Version>0.4.0</Version>
+    <Product>print-server</Product>
+    <Company>print-server</Company>
+    <Description>print-server: agente de impresión</Description>
+    <Copyright>Licencia MIT</Copyright>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <ApplicationIcon>icono.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- El agente compilado para Windows, que va dentro. Lo deja ahí compilar.ps1. -->
+    <AgenteExe Condition="'$(AgenteExe)' == ''">$(MSBuildThisFileDirectory)dist/print-server-agente.exe</AgenteExe>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="src/**/*.cs" />
+    <EmbeddedResource Include="icono.ico" LogicalName="icono.ico" />
+    <EmbeddedResource Include="$(AgenteExe)" LogicalName="print-server-agente.exe" Condition="Exists('$(AgenteExe)')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.ServiceProcess" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Para compilar en cualquier sistema sin tener instalado el .NET Framework. -->
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    Un paquete sin el agente dentro compila y se abre, pero no puede instalar
+    nada. Para publicar, compilar.ps1 pasa ExigirAgente=true y así no sale uno
+    por descuido.
+  -->
+  <Target Name="ExigeAgente" BeforeTargets="BeforeBuild" Condition="'$(ExigirAgente)' == 'true' And !Exists('$(AgenteExe)')">
+    <Error Text="No encuentro el agente compilado en $(AgenteExe). Compílalo primero (compilar.ps1 lo hace)." />
+  </Target>
+</Project>

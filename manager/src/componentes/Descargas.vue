@@ -102,8 +102,10 @@ onMounted(async () => {
     <template v-if="sistema === 'windows'">
       <template v-if="binario">
         <p>
-          Baja el programa y haz doble clic. Te pregunta los dos datos en el
-          navegador, se instala como servicio y deja un icono junto al reloj.
+          Baja el programa y haz doble clic. Se abre la ventana de print-server:
+          pega la llave, pulsa «Conectar» y acepta el permiso que pide Windows.
+          Queda instalado como servicio —arranca con la máquina aunque nadie
+          inicie sesión— y con un icono junto al reloj.
         </p>
         <p>
           <a class="boton" :href="binario.url">Descargar para Windows ({{ mb(binario.bytes) }})</a>

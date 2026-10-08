@@ -11,3 +11,10 @@ dist/
 print-server-agente
 print-server-agente-*
 print-server-hub
+
+# La ventana de Windows (C#): lo que deja dotnet al compilar.
+agente/windows/bin/
+agente/windows/obj/
+agente/windows/pruebas/bin/
+agente/windows/pruebas/obj/
+agente/windows/pruebas/capturas/
