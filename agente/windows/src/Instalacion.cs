@@ -179,10 +179,10 @@ namespace PrintServer
 
             registro.Escribe("instalar", "listo");
             var config = ConfigAgente.Lee(Rutas.Config);
-            if (conectado != null) return conectado + "\n\nQuedó instalado como servicio: arranca con Windows, sin que nadie inicie sesión.";
+            if (conectado != null) return conectado + "\n\nQuedó instalado como servicio de Windows: sigue imprimiendo después de reiniciar la computadora, aunque nadie inicie sesión.";
             if (config == null || !config.Configurado)
-                return "Instalado. Falta conectarlo a un hub: pon la dirección y la llave y pulsa «Conectar».";
-            return "Instalado y en marcha: arranca con Windows, sin que nadie inicie sesión.";
+                return "Instalado como servicio, pero sin conectar: no imprime hasta que pongas la dirección y la llave y pulses «Conectar».";
+            return "Instalado como servicio y en marcha: sigue imprimiendo después de reiniciar la computadora, aunque nadie inicie sesión.";
         }
 
         /// <summary>

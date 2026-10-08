@@ -73,6 +73,14 @@ $script:exe = Join-Path $env:TEMP 'print-server-agente-windows-x64.exe'
 Copy-Item $Paquete $script:exe -Force
 
 # ---------------------------------------------------------------------------
+Paso 'recién descargado: la ventana ofrece «Instalar servicio»'
+# Sin agente que conteste, la captura espera 15 s antes de pintar.
+$png = Join-Path $Capturas 'sin-instalar.png'
+$v = Start-Process -FilePath $script:exe -ArgumentList @('--captura', '--archivo', "`"$png`"") -PassThru
+if (-not $v.WaitForExit(60000)) { $v.Kill(); Mal 'la ventana sin instalar no terminó la captura' }
+Comprueba (Test-Path $png) 'captura de la ventana sin instalar'
+
+# ---------------------------------------------------------------------------
 Paso 'una 0.3.0 vieja: servicio con el nombre de antes y su conexión en ProgramData\chalona-print'
 EscribeConfig (Join-Path $env:ProgramData 'chalona-print\agente.json')
 $viejo = Join-Path $env:ProgramData 'chalona-print\viejo'
@@ -96,6 +104,10 @@ Comprueba (Test-Path (Join-Path $programa 'print-server-agente.exe')) 'sacó el 
 $s = Servicio 'print-server'
 Comprueba ($s -and $s.Status -eq 'Running') "servicio print-server en marcha ($($s.Status))"
 Comprueba ($s -and $s.StartType -eq 'Automatic') "arranca con Windows ($($s.StartType))"
+# Con SYSTEM corre al reiniciar aunque nadie inicie sesión; con la cuenta de
+# alguien, esperaría a que esa persona entrara.
+$cuenta = (Get-CimInstance Win32_Service -Filter "Name='print-server'").StartName
+Comprueba ($cuenta -eq 'LocalSystem') "corre con la cuenta SYSTEM, sin sesión ($cuenta)"
 $run = (Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run' -ErrorAction SilentlyContinue).'print-server'
 Comprueba ($run -like '*--bandeja') 'icono de la bandeja al iniciar sesión'
 

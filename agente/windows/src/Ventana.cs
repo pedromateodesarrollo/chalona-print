@@ -16,10 +16,10 @@ namespace PrintServer
     /// desde el menú Inicio o desde el icono junto al reloj.
     ///
     /// Sustituye al asistente en el navegador de la 0.2. Sin configurar sirve
-    /// para conectar; conectada, enseña cómo va el agente. Nunca corre como
-    /// administrador: lo que lo necesita (conectar, instalar, desinstalar) se
-    /// pide para esa acción y Windows enseña su aviso de permiso. Por eso esos
-    /// botones llevan el escudo.
+    /// para instalarlo como servicio y conectarlo; conectada, enseña cómo va el
+    /// agente. Nunca corre como administrador: lo que lo necesita (conectar,
+    /// instalar, desinstalar) se pide para esa acción y Windows enseña su aviso
+    /// de permiso. Por eso esos botones llevan el escudo.
     /// </summary>
     sealed class Ventana : Form
     {
@@ -202,7 +202,7 @@ namespace PrintServer
                 t.Controls.Add(caja);
             }
             _llave.UseSystemPasswordChar = true;
-            _conexion.Text = "Conectar";
+            _conexion.Text = "Instalar servicio";
             _conexion.Margin = new Padding(0, 8, 0, 2);
             _conexion.Click += (s, e) => ConexionClic();
             t.Controls.Add(new Label { AutoSize = true });
@@ -377,13 +377,19 @@ namespace PrintServer
                     _nombre.Text = Environment.MachineName;
                 }
                 _hub.Enabled = _llave.Enabled = _nombre.Enabled = !conectada;
-                _conexion.Text = conectada ? "Desconectar" : "Conectar";
-                AjustaBoton(_conexion);
             }
             if (conectada)
             {
                 _hub.Text = s.Hub;
                 _nombre.Text = s.Nombre;
+            }
+            // Fuera del bloque de arriba: también cambia sin cambiar la conexión,
+            // al quedar puesto o quitarse el servicio.
+            var boton = s.BotonConexion();
+            if (_conexion.Text != boton)
+            {
+                _conexion.Text = boton;
+                AjustaBoton(_conexion);
             }
 
             // Estado.

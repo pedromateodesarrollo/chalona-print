@@ -29,6 +29,9 @@ protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
   falta una llave nueva.
 * La 0.3.0 fue la primera con ventana. Se instaló en varias computadoras, pero
   su código nunca llegó a este repositorio; esta versión la rehace.
+* Sin instalar, el botón dice «Instalar servicio»: instala, conecta y lo deja
+  como servicio, que sigue imprimiendo después de reiniciar. Con «Conectar» no
+  se veía por ningún lado cómo instalar el servicio.
 * `instalar.ps1` usa el mismo paquete, sin ventana.
 
 ### Agente

@@ -6,9 +6,13 @@ con el agente (Dart) dentro: lo que se descarga del hub como
 
 Al abrirlo:
 
-* **Sin conectar**: se pone la dirección del hub y una llave (`cpk_…`) y se
-  pulsa «Conectar». Windows pide permiso una vez; el programa se copia a
-  `Archivos de programa\print-server`, conecta, y queda como servicio.
+* **Sin instalar**: se pone la dirección del hub y una llave (`cpk_…`) y se
+  pulsa «Instalar servicio». Windows pide permiso una vez; el programa se copia
+  a `Archivos de programa\print-server`, conecta, y queda como servicio: sigue
+  imprimiendo después de reiniciar, aunque nadie inicie sesión. Sin llave no se
+  instala: un servicio sin conectar no imprime.
+* **Instalado pero desconectado** (tras «Desconectar»): el servicio sigue
+  puesto, esperando; el botón dice «Conectar».
 * **Conectado**: enseña si está conectado, desde cuándo, cuánto lleva impreso,
   las impresoras (con «Imprimir página de prueba») y el registro del agente.
 

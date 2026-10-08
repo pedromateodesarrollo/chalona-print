@@ -60,15 +60,20 @@ namespace PrintServer
 
             // Un agente que contesta pero no lo arrancó el servicio: una 0.2 en
             // primer plano o como tarea programada. Imprime hoy; mañana, quién sabe.
-            if (Agente != null && !Agente.EsServicio)
+            // Sin conectar, lo resuelve «Instalar servicio», que lo cierra.
+            if (Agente != null && !Agente.EsServicio && Conectada)
                 return ($"El agente corre fuera del servicio (versión {Agente.Version}): no es seguro que " +
                         "arranque con Windows. «Actualizar» lo deja como servicio.",
-                    Conectada ? AccionArranque.Actualizar : AccionArranque.Ninguna, instalado);
+                    AccionArranque.Actualizar, instalado);
 
+            // Sin conectar no se ofrece instalar aparte: un servicio sin llave no
+            // imprime, y lo que se viene a buscar es que imprima y siga
+            // imprimiendo al reiniciar. Eso lo hace «Instalar servicio», arriba.
             if (!instalado)
                 return Conectada
                     ? ("No arranca con Windows: falta instalarlo como servicio.", AccionArranque.Instalar, false)
-                    : ("Al conectar se instala como servicio de Windows y arranca solo, sin que nadie inicie sesión.",
+                    : ("«Instalar servicio» lo conecta y lo deja como servicio de Windows: sigue imprimiendo " +
+                       "después de reiniciar, aunque nadie inicie sesión.",
                         AccionArranque.Ninguna, false);
 
             if (VersionInstalada != null)
@@ -88,8 +93,10 @@ namespace PrintServer
             {
                 case EstadoServicio.EnMarcha:
                     return Conectada
-                        ? ("Instalado y en marcha: arranca con Windows, sin que nadie inicie sesión.", AccionArranque.Ninguna, true)
-                        : ("Instalado. Esperando que se conecte a un hub.", AccionArranque.Ninguna, true);
+                        ? ("Instalado como servicio: sigue imprimiendo después de reiniciar, aunque nadie inicie sesión.",
+                            AccionArranque.Ninguna, true)
+                        : ("Instalado como servicio, pero sin conectar: no imprime hasta que pongas una llave y " +
+                           "pulses «Conectar».", AccionArranque.Ninguna, true);
                 case EstadoServicio.Arrancando:
                     return ("Arrancando el servicio…", AccionArranque.Ninguna, true);
                 case EstadoServicio.Deteniendo:
@@ -99,6 +106,17 @@ namespace PrintServer
                         AccionArranque.Iniciar, true);
             }
         }
+
+        /// <summary>
+        /// El botón de «Conexión con el hub». Sin servicio dice lo que hace de
+        /// verdad —instala, conecta y deja el servicio imprimiendo—: con
+        /// «Conectar» no se veía por ningún lado cómo instalarlo. Con el servicio
+        /// ya puesto (tras desconectar), solo falta conectar.
+        /// </summary>
+        public string BotonConexion() =>
+            Conectada ? "Desconectar"
+            : Servicio == EstadoServicio.NoInstalado ? "Instalar servicio"
+            : "Conectar";
 
         /// <summary>De la más vieja a la más nueva.</summary>
         public IList<string> Registro() =>

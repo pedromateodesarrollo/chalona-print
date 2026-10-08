@@ -184,16 +184,26 @@ namespace PrintServer
             var conectada = new ConfigAgente { Hub = "https://h", TieneCredencial = true };
 
             var s = new Situacion { VersionPropia = "0.4.0", Config = null, Servicio = EstadoServicio.NoInstalado };
-            Igual("recién descargado: nada que hacer hasta conectar", AccionArranque.Ninguna, s.Arranque().accion);
-            Cierto("…y lo explica", s.Arranque().texto.Contains("Al conectar"));
+            // Lo que se viene a buscar: que imprima y siga imprimiendo al reiniciar.
+            // Un servicio sin llave no imprime, así que instalar va con la llave.
+            Igual("recién descargado: el botón de conexión instala", "Instalar servicio", s.BotonConexion());
+            Igual("…y abajo no hay otro botón que instale sin llave", AccionArranque.Ninguna, s.Arranque().accion);
+            Cierto("…pero dice que sobrevive al reinicio", s.Arranque().texto.Contains("después de reiniciar"));
+            Cierto("…sin Desinstalar: no hay nada puesto", !s.Arranque().desinstalar);
+
+            s = new Situacion { VersionPropia = "0.4.0", Config = null, Servicio = EstadoServicio.EnMarcha, VersionInstalada = "0.4.0" };
+            Igual("servicio puesto y desconectado: solo falta conectar", "Conectar", s.BotonConexion());
+            Igual("…sin botón abajo", AccionArranque.Ninguna, s.Arranque().accion);
+            Cierto("…y dice que no imprime", s.Arranque().texto.Contains("no imprime"));
 
             s = new Situacion { VersionPropia = "0.4.0", Config = conectada, Servicio = EstadoServicio.NoInstalado };
             Igual("conectada sin servicio → Instalar", AccionArranque.Instalar, s.Arranque().accion);
+            Igual("…y arriba, Desconectar", "Desconectar", s.BotonConexion());
 
             s = new Situacion { VersionPropia = "0.4.0", Config = conectada, Servicio = EstadoServicio.EnMarcha, VersionInstalada = "0.4.0", Agente = Agente(true) };
             Igual("todo bien → sin botón", AccionArranque.Ninguna, s.Arranque().accion);
             Cierto("…con Desinstalar", s.Arranque().desinstalar);
-            Igual("…y el texto de la foto", "Instalado y en marcha: arranca con Windows, sin que nadie inicie sesión.", s.Arranque().texto);
+            Igual("…y el texto de la foto", "Instalado como servicio: sigue imprimiendo después de reiniciar, aunque nadie inicie sesión.", s.Arranque().texto);
 
             // La 0.3.0, con su servicio de nombre viejo y su agente sin «modo».
             s = new Situacion { VersionPropia = "0.4.0", Config = conectada, ServiciosViejos = new List<string> { "chalona-print-agente" }, Agente = Agente(false, version: "0.3.0") };
@@ -204,6 +214,12 @@ namespace PrintServer
             s = new Situacion { VersionPropia = "0.4.0", Config = conectada, Agente = Agente(false, version: "0.2.2") };
             Igual("agente fuera del servicio → Actualizar", AccionArranque.Actualizar, s.Arranque().accion);
             Cierto("…y avisa de que no es seguro que arranque", s.Arranque().texto.Contains("no es seguro"));
+
+            var suelto = Agente(false, version: "0.2.2");
+            suelto.Configurado = false;
+            s = new Situacion { VersionPropia = "0.4.0", Config = null, Agente = suelto };
+            Igual("agente suelto sin conectar → lo resuelve «Instalar servicio»", "Instalar servicio", s.BotonConexion());
+            Igual("…sin un «Actualizar» que lo dejaría sin llave", AccionArranque.Ninguna, s.Arranque().accion);
 
             s = new Situacion { VersionPropia = "0.4.1", Config = conectada, Servicio = EstadoServicio.EnMarcha, VersionInstalada = "0.4.0", Agente = Agente(true) };
             Igual("instalada más vieja → Actualizar", AccionArranque.Actualizar, s.Arranque().accion);
