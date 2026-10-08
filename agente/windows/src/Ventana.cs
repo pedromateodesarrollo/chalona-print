@@ -81,9 +81,9 @@ namespace PrintServer
             raiz.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             raiz.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             raiz.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            raiz.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            raiz.RowStyles.Add(new RowStyle(SizeType.Percent, 58));
             raiz.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            raiz.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+            raiz.RowStyles.Add(new RowStyle(SizeType.Percent, 42));
             raiz.Controls.Add(Cabecera(), 0, 0);
             raiz.Controls.Add(Grupo("Conexión con el hub", Conexion(), true), 0, 1);
             raiz.Controls.Add(Grupo("Estado", Estado(), true), 0, 2);
@@ -302,7 +302,10 @@ namespace PrintServer
             if (ancho <= 0 || _impresoras.Columns.Count < 3) return;
             _impresoras.Columns[0].Width = (int)(ancho * 0.46);
             _impresoras.Columns[1].Width = (int)(ancho * 0.18);
-            _impresoras.Columns[2].Width = ancho - _impresoras.Columns[0].Width - _impresoras.Columns[1].Width - 4;
+            // Se deja sitio a la barra vertical aunque todavía no esté: si no, al
+            // aparecer empuja las columnas, sale la horizontal y tapa una fila.
+            _impresoras.Columns[2].Width = ancho - _impresoras.Columns[0].Width - _impresoras.Columns[1].Width
+                - SystemInformation.VerticalScrollBarWidth - 2;
         }
 
         // ------------------------------------------------------------ refresco
