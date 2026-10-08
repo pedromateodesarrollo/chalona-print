@@ -189,3 +189,7 @@ Comprueba (-not (Test-Path $programa)) 'sin Archivos de programa\print-server'
 Write-Host ''
 if ($fallos -gt 0) { Write-Host "$fallos comprobaciones fallaron"; exit 1 }
 Write-Host 'Todo bien.'
+# Explícito: el último programa externo que corrió puede ser una consulta que
+# tenía que fallar (la tarea vieja ya no existe), y GitHub Actions toma su
+# código de salida si el script no da uno.
+exit 0
