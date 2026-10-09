@@ -89,7 +89,10 @@ Future<List<Map<String, Object?>>> _listado(String carpeta) async {
   if (!dir.existsSync()) return const [];
 
   final salida = <Map<String, Object?>>[];
-  for (final f in dir.listSync().whereType<File>()) {
+  // Sin seguir enlaces: un enlace es otro nombre del mismo archivo (en
+  // producción, `print-server-agente-*` apunta al `chalona-print-agente-*` de
+  // antes del renombre) y se sirve, pero no se lista dos veces.
+  for (final f in dir.listSync(followLinks: false).whereType<File>()) {
     final nombre = f.uri.pathSegments.last;
     if (nombre.startsWith('.')) continue;
     final huella = _huellas.putIfAbsent(
