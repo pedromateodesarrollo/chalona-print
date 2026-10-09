@@ -37,7 +37,9 @@ export const autenticacion = [
     titulo: 'Sesión de persona',
     texto:
       'La del panel. `POST /v1/auth/login` devuelve un JWT que dura siete días y ' +
-      'viaja en la misma cabecera.',
+      'viaja en la misma cabecera. Quien olvidó su clave pide un enlace para poner ' +
+      'otra (`POST /v1/auth/recuperar`), que llega por el correo de salida de su ' +
+      'organización.',
   },
 ]
 
@@ -109,6 +111,49 @@ export const puntos = [
       ['correo', 'texto', 'sí', ''],
       ['clave', 'texto', 'sí', ''],
     ],
+    respuesta: `{ "token": "eyJ...", "usuario": { … } }`,
+  },
+  {
+    grupo: 'Sesión',
+    metodo: 'POST',
+    ruta: '/v1/auth/recuperar',
+    acceso: 'público',
+    resumen: '«¿Olvidaste tu clave?»: manda un enlace para poner una clave nueva.',
+    cuerpo: [['correo', 'texto', 'sí', '']],
+    nota:
+      'Si el correo tiene cuenta y su organización tiene correo de salida, le llega ' +
+      'un enlace `/#/activar/<token>` que sirve una vez y **vence en 1 hora**. La ' +
+      'clave de antes sigue valiendo hasta que se use. La respuesta es siempre la ' +
+      'misma, exista o no el correo, y el envío pasa después de contestar: ni el ' +
+      'contenido ni lo que tarda dicen qué correos tienen cuenta. Cinco pedidos por ' +
+      'minuto por IP y tres por hora por correo; pasado eso, `429 demasiados_intentos`. ' +
+      'El enlace se arma con `PRINT_URL_PUBLICA`: sin ella, el hub no manda nada y ' +
+      '`/salud` dice `recuperar: false`.',
+    respuesta: `{ "pedido": true }`,
+  },
+  {
+    grupo: 'Sesión',
+    metodo: 'GET',
+    ruta: '/v1/auth/invitacion/:token',
+    acceso: 'público',
+    resumen: 'Si un enlace para poner clave sirve, y para qué correo.',
+    nota:
+      'Lo usa la página del enlace antes de pedir la clave. Un token que no existe ' +
+      'o ya se usó da `404 invitacion_invalida`.',
+    respuesta: `{ "correo": "ana@ejemplo.do", "vigente": true }`,
+  },
+  {
+    grupo: 'Sesión',
+    metodo: 'POST',
+    ruta: '/v1/auth/activar',
+    acceso: 'público',
+    resumen: 'Pone la clave con un enlace y abre la sesión.',
+    cuerpo: [
+      ['token', 'texto', 'sí', 'El del enlace'],
+      ['clave', 'texto', 'sí', 'Ocho caracteres o más'],
+    ],
+    nota:
+      'El enlace sirve una vez. Vencido o ya usado: `410 invitacion_vencida`.',
     respuesta: `{ "token": "eyJ...", "usuario": { … } }`,
   },
   {
@@ -317,6 +362,9 @@ export const puntos = [
     ruta: '/v1/usuarios',
     acceso: 'admin',
     resumen: 'Los usuarios de la organización.',
+    nota:
+      '`invitacion_vence` dice hasta cuándo vale el enlace para poner clave que ' +
+      'tenga pendiente cada persona (null si no tiene).',
   },
   {
     grupo: 'Usuarios',
@@ -340,10 +388,85 @@ export const puntos = [
   },
   {
     grupo: 'Usuarios',
+    metodo: 'POST',
+    ruta: '/v1/usuarios/:id/invitacion',
+    acceso: 'admin',
+    resumen: 'Un enlace para que esa persona ponga su clave ella misma.',
+    nota:
+      'Sirve una vez y vence en siete días; invalida el enlace anterior de esa ' +
+      'persona, y su clave sigue valiendo hasta que lo use. El enlace se devuelve ' +
+      'una sola vez. Si la organización tiene correo de salida, además se le manda: ' +
+      '`envio` es `null` sin correo de salida (compártelo tú), `{"enviado": true, ' +
+      '"para": …}` o `{"enviado": false, "error": …, "detalle": …}` si el servidor ' +
+      'de correo no lo aceptó (el enlace sirve igual).',
+    respuesta: `{
+  "enlace": "https://TU-HUB/#/activar/…",
+  "vence": "2026-10-16T12:00:00.000Z",
+  "envio": { "enviado": true, "para": "ana@ejemplo.do" }
+}`,
+  },
+  {
+    grupo: 'Usuarios',
     metodo: 'DELETE',
     ruta: '/v1/usuarios/:id',
     acceso: 'admin',
     resumen: 'Da de baja a alguien.',
+  },
+
+  // -------------------------------------------------------- organización
+  {
+    grupo: 'Organización',
+    metodo: 'GET',
+    ruta: '/v1/org/correo',
+    acceso: 'admin',
+    resumen: 'El correo de salida de la organización, sin la clave.',
+    nota:
+      'Por él salen los enlaces para poner clave: el de «¿Olvidaste tu clave?» y el ' +
+      'que genera un admin. La clave del servidor de correo no vuelve nunca: ' +
+      '`clave_puesta` dice si hay una.',
+    respuesta: `{
+  "host": "smtp.gmail.com",
+  "puerto": 587,
+  "seguridad": "starttls",
+  "remitente": "avisos@tu-empresa.com",
+  "usuario": "avisos@tu-empresa.com",
+  "nombre": "print-server de tu empresa",
+  "clave_puesta": true,
+  "configurado": true
+}`,
+  },
+  {
+    grupo: 'Organización',
+    metodo: 'PUT',
+    ruta: '/v1/org/correo',
+    acceso: 'admin',
+    resumen: 'Pone o cambia el correo de salida.',
+    cuerpo: [
+      ['host', 'texto', 'sí', 'El servidor SMTP'],
+      ['puerto', 'número', 'sí', '465 con `tls`, 587 con `starttls`'],
+      ['seguridad', 'texto', 'no', '`starttls` (por defecto), `tls` o `ninguna` (solo en una red propia)'],
+      ['remitente', 'texto', 'sí', 'La dirección del «De:»'],
+      ['usuario', 'texto', 'no', 'Sin usuario no se autentica'],
+      ['clave', 'texto', 'no', 'Vacía o sin mandar: se queda la que estaba'],
+      ['nombre', 'texto', 'no', 'El nombre que se ve en el «De:»'],
+      ['quitar', 'sí/no', 'no', '`true` borra el correo de salida'],
+    ],
+    nota:
+      'Devuelve lo mismo que el GET. Sin correo de salida en ninguna organización, ' +
+      'la entrada del panel no ofrece «¿Olvidaste tu clave?».',
+  },
+  {
+    grupo: 'Organización',
+    metodo: 'POST',
+    ruta: '/v1/org/correo/prueba',
+    acceso: 'admin',
+    resumen: 'Manda un correo de prueba a quien lo pide.',
+    nota:
+      'Va al correo de la persona con sesión (con una llave no hay a quién: ' +
+      '`400 sin_destinatario`). Si el servidor no lo acepta, `502` con lo que ' +
+      'contestó: `correo_autenticacion`, `correo_conexion`, `correo_tls`, ' +
+      '`correo_sin_starttls`, `correo_rechazado` o `correo_tiempo`.',
+    respuesta: `{ "enviado": true, "para": "ana@ejemplo.do" }`,
   },
 
   // ----------------------------------------------------------- descargas
@@ -408,6 +531,11 @@ export const puntos = [
     ruta: '/salud',
     acceso: 'público',
     resumen: 'Comprueba que el hub responde y llega a su base de datos.',
+    nota:
+      '`recuperar` dice si la entrada puede ofrecer «¿Olvidaste tu clave?»: hace ' +
+      'falta que alguna organización tenga correo de salida y que el hub tenga ' +
+      '`PRINT_URL_PUBLICA`.',
+    respuesta: `{ "ok": true, "servicio": "print-server", "recuperar": true }`,
   },
 ]
 
@@ -415,13 +543,16 @@ export const errores = [
   ['401', '`no_autenticado`', 'Falta la credencial o no vale'],
   ['403', '`sin_permiso` · `requiere_admin`', 'La llave no llega a tanto'],
   ['404', '`impresora_no_encontrada`', 'Ni por id ni por nombre'],
+  ['404', '`invitacion_invalida`', 'Ese enlace para poner clave no existe o ya se usó'],
+  ['410', '`invitacion_vencida`', 'El enlace venció o ya se usó: pide otro'],
   ['409', '`impresora_ambigua`', 'Dos impresoras con ese nombre; manda el id'],
   ['409', '`dominio_en_uso`', 'El dominio todavía tiene agentes o llaves'],
   ['403', '`no_publicas_aqui`', 'Publicar descargas es de la organización que levantó el hub'],
   ['409', '`impresora_ausente`', 'El agente ya no la ve en su sistema'],
   ['413', '`contenido_grande`', 'Pasa del tope del hub'],
   ['415', '`formato_no_soportado`', 'Esa impresora no admite ese formato'],
-  ['429', '`demasiados_intentos`', 'Freno del login'],
+  ['429', '`demasiados_intentos`', 'Freno del login, del registro y de «¿Olvidaste tu clave?»'],
+  ['502', '`correo_*`', 'El servidor de correo de la organización no aceptó el envío'],
 ]
 
 export const grupos = [...new Set(puntos.map((p) => p.grupo))]

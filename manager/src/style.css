@@ -151,6 +151,7 @@ p code, li code, td code {
 }
 .metodo.GET { background: #0d9488; }
 .metodo.POST { background: #2563eb; }
+.metodo.PUT { background: #7c3aed; }
 .metodo.PATCH { background: #ca8a04; }
 .metodo.DELETE { background: #dc2626; }
 .ruta { font: 14px ui-monospace, monospace; }
@@ -210,6 +211,16 @@ input:focus, select:focus { outline: 2px solid var(--marca); outline-offset: -1p
   background: var(--fondo-3); padding: 10px; border-radius: 8px; margin-top: 8px;
 }
 
+/* Formularios de varias columnas (Organización): una por campo en un teléfono,
+   las que quepan en una pantalla ancha. */
+.rejilla-campos { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.acciones-fila { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 16px; }
+.chico, .tarjeta p.chico { font-size: 14px; }
+/* `.tarjeta p` apaga el color de todo párrafo de una tarjeta; un error o un
+   «guardado» dentro de una tienen que seguir viéndose como tales. */
+.tarjeta p.aviso { color: var(--mal); }
+.tarjeta p.exito { color: var(--texto); }
+
 .pie { border-top: 1px solid var(--borde); padding: 30px 0; color: var(--texto-2); font-size: 14px; }
 .pie .contenedor { display: flex; gap: 18px; flex-wrap: wrap; align-items: center; }
 .pie nav { margin-left: auto; display: flex; gap: 18px; }
@@ -222,4 +233,17 @@ input:focus, select:focus { outline: 2px solid var(--marca); outline-offset: -1p
   .lateral { display: flex; overflow-x: auto; gap: 6px; border-right: 0; border-bottom: 1px solid var(--borde); }
   .lateral button { width: auto; white-space: nowrap; }
   .contenido { padding: 20px 16px; }
+
+  /* Una tabla con `tarjetas-movil` pasa a una tarjeta por fila: en un
+     teléfono, sus botones quedaban fuera de la pantalla. Cada celda con
+     `data-titulo` dice qué es, porque la cabecera ya no se ve. */
+  table.tarjetas-movil thead { display: none; }
+  table.tarjetas-movil, table.tarjetas-movil tbody,
+  table.tarjetas-movil tr, table.tarjetas-movil td { display: block; width: 100%; }
+  table.tarjetas-movil tr {
+    border: 1px solid var(--borde); border-radius: var(--radio);
+    background: var(--fondo-2); padding: 10px 12px; margin-bottom: 10px;
+  }
+  table.tarjetas-movil td { border: 0; padding: 3px 0; }
+  table.tarjetas-movil td[data-titulo]::before { content: attr(data-titulo) ": "; color: var(--texto-2); }
 }

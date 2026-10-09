@@ -99,6 +99,21 @@ Necesita un Postgres y nada más. Las migraciones se aplican solas al arrancar.
 | `PRINT_MAX_TRABAJO_MB` | 8 | Tope del contenido de un trabajo |
 | `PRINT_TTL_HORAS` | 24 | Cuánto espera un trabajo antes de darse por perdido |
 | `PRINT_MANAGER` | `manager` | Carpeta del sitio compilado |
+| `PRINT_URL_PUBLICA` | — | Dirección del hub (`https://print.ejemplo.com`). Sin ella, el panel no ofrece «¿Olvidaste tu clave?» |
+
+### Correo de salida y «¿Olvidaste tu clave?»
+
+Cada organización puede poner su propio correo de salida (panel →
+Organización): una cuenta SMTP por la que salen los enlaces para poner clave.
+Con él, la entrada del panel ofrece «¿Olvidaste tu clave?» —un enlace que
+sirve una vez y vence en una hora— y un admin puede mandarle a alguien de su
+organización un enlace para que ponga la suya (Usuarios). El hub no usa el
+correo de ningún otro sistema.
+
+El enlace de recuperación se arma solo con `PRINT_URL_PUBLICA`, nunca con la
+dirección que trae la petición: la pide cualquiera sin credencial, y fiarse de
+su cabecera `Host` dejaría que un extraño hiciera llegar el correo legítimo de
+tu organización con un enlace a su página. Más en [SECURITY.md](SECURITY.md).
 
 ## Publicar los ejecutables en tu hub
 

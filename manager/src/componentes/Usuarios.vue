@@ -10,6 +10,14 @@ const confirmando = ref(null)
 const cambiando = ref(null)
 const claveNueva = ref('')
 
+// El enlace para que alguien ponga su clave él mismo. Sale por el correo de
+// salida de la organización si lo hay (`envio`); si no, o si el correo no
+// salió, se enseña para compartirlo a mano. Se ve una sola vez: el hub lo
+// guarda hasheado.
+const enlace = ref(null) // { correo, enlace, envio }
+const pidiendo = ref(null)
+const copiado = ref(false)
+
 async function carga() {
   try {
     usuarios.value = (await api.get('/v1/usuarios')).usuarios
@@ -37,6 +45,29 @@ async function cambiaClave(u) {
   } catch (e) {
     error.value = e.message
   }
+}
+
+async function mandaEnlace(u) {
+  error.value = ''
+  enlace.value = null
+  pidiendo.value = u.id
+  try {
+    const r = await api.post(`/v1/usuarios/${u.id}/invitacion`)
+    enlace.value = { correo: u.correo, ...r }
+    await carga()
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    pidiendo.value = null
+  }
+}
+
+async function copia() {
+  try {
+    await navigator.clipboard.writeText(enlace.value.enlace)
+    copiado.value = true
+    setTimeout(() => (copiado.value = false), 2000)
+  } catch { /* está a la vista */ }
 }
 
 async function borra(u) {
@@ -86,7 +117,27 @@ onMounted(carga)
     </div>
   </div>
 
-  <table>
+  <div v-if="enlace" class="exito">
+    <template v-if="enlace.envio?.enviado">
+      Le mandamos a <strong>{{ enlace.correo }}</strong> un enlace para poner su clave.
+      Sirve una vez y vence en 7 días; hasta que lo use, su clave de antes sigue valiendo.
+    </template>
+    <template v-else-if="enlace.envio">
+      El correo a {{ enlace.correo }} no salió ({{ enlace.envio.detalle || enlace.envio.error }}).
+      Compártele este enlace por otro lado. Sirve una vez y vence en 7 días.
+    </template>
+    <template v-else>
+      Tu organización no tiene correo de salida (Organización): compártele este enlace a
+      {{ enlace.correo }}. Sirve una vez y vence en 7 días.
+    </template>
+    <div class="secreto">{{ enlace.enlace }}</div>
+    <div class="acciones-fila" style="margin-top: 10px">
+      <button class="boton suave chico" @click="copia">{{ copiado ? 'Copiado' : 'Copiar' }}</button>
+      <button class="boton suave chico" @click="enlace = null">Listo</button>
+    </div>
+  </div>
+
+  <table class="tarjetas-movil">
     <thead>
       <tr><th>Correo</th><th>Rol</th><th>Último acceso</th><th></th></tr>
     </thead>
@@ -96,31 +147,47 @@ onMounted(carga)
           {{ u.correo }}
           <span v-if="u.id === props.yo.id" class="apagado">(tú)</span>
         </td>
-        <td class="apagado">{{ u.rol }}</td>
-        <td class="apagado" style="font-size: 13px">{{ hora(u.ultimo_acceso) }}</td>
-        <td style="white-space: nowrap">
-          <template v-if="cambiando === u.id">
-            <input
-              v-model="claveNueva"
-              type="password"
-              placeholder="Clave nueva"
-              style="max-width: 170px; display: inline-block"
-              @keyup.enter="cambiaClave(u)"
-            />
-            <button class="boton chico" style="margin-left: 6px" @click="cambiaClave(u)">Guardar</button>
-          </template>
-          <template v-else>
-            <button class="boton suave chico" @click="cambiando = u.id">Clave</button>
-            <button
-              v-if="u.id !== props.yo.id && props.yo.rol === 'admin'"
-              class="boton chico"
-              :class="confirmando === u.id ? 'peligro' : 'suave'"
-              style="margin-left: 6px"
-              @click="borra(u)"
-            >
-              {{ confirmando === u.id ? '¿Seguro?' : 'Quitar' }}
-            </button>
-          </template>
+        <td class="apagado" data-titulo="Rol">{{ u.rol }}</td>
+        <td class="apagado" style="font-size: 13px" data-titulo="Último acceso">
+          {{ hora(u.ultimo_acceso) }}
+          <div v-if="u.invitacion_vence && new Date(u.invitacion_vence) > new Date()">
+            Enlace para poner clave hasta {{ hora(u.invitacion_vence) }}
+          </div>
+        </td>
+        <td>
+          <!-- Los botones bajan de línea en un teléfono en vez de ensanchar la tabla. -->
+          <div class="acciones-fila" style="margin-top: 0">
+            <template v-if="cambiando === u.id">
+              <input
+                v-model="claveNueva"
+                type="password"
+                placeholder="Clave nueva"
+                style="max-width: 170px; display: inline-block"
+                @keyup.enter="cambiaClave(u)"
+              />
+              <button class="boton chico" @click="cambiaClave(u)">Guardar</button>
+            </template>
+            <template v-else>
+              <button class="boton suave chico" @click="cambiando = u.id">Clave</button>
+              <button
+                v-if="props.yo.rol === 'admin'"
+                class="boton suave chico"
+                :disabled="pidiendo === u.id"
+                title="Un enlace para que ponga su clave él mismo"
+                @click="mandaEnlace(u)"
+              >
+                {{ pidiendo === u.id ? 'Un momento…' : 'Enlace para poner clave' }}
+              </button>
+              <button
+                v-if="u.id !== props.yo.id && props.yo.rol === 'admin'"
+                class="boton chico"
+                :class="confirmando === u.id ? 'peligro' : 'suave'"
+                @click="borra(u)"
+              >
+                {{ confirmando === u.id ? '¿Seguro?' : 'Quitar' }}
+              </button>
+            </template>
+          </div>
         </td>
       </tr>
     </tbody>

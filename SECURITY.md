@@ -36,10 +36,32 @@ loopback, así que nadie de la red lo alcanza.
 | Llaves de API | Solo el sha256 del secreto. El secreto se enseña una vez |
 | Credenciales de agente | Igual: solo el hash |
 | Sesiones del panel | JWT HS256 con `PRINT_SECRETO_JWT`, siete días |
+| Enlaces para poner clave | Solo el sha256. Un uso; una hora el de «¿Olvidaste tu clave?», siete días el que genera un admin |
+| Clave del correo de salida | En claro (hace falta para autenticar ante el servidor SMTP). La API nunca la devuelve: el panel solo sabe si está puesta. Usa una cuenta o una clave de aplicación solo para esto |
 
 Las comparaciones van en tiempo constante. La llave de API no se guarda en la
 máquina del agente: se usa una vez para darlo de alta y lo que queda es la
 credencial de ese agente, revocable por separado.
+
+## Recuperar la clave
+
+«¿Olvidaste tu clave?» manda, por el correo de salida de la organización de
+esa persona, un enlace que sirve una vez y vence en una hora. Hasta que se usa,
+la clave de antes sigue valiendo: pedirlo no le cierra la puerta a nadie.
+
+* **No delata cuentas.** La respuesta es la misma exista o no el correo, y el
+  correo sale después de contestar, así que tampoco lo dice el tiempo.
+* **Frenos.** Cinco pedidos por minuto por IP y tres por hora por correo: ni
+  probar correos ni llenarle el buzón a alguien sale barato. Login y registro:
+  diez por minuto.
+* **El enlace se arma con `PRINT_URL_PUBLICA`**, nunca con el `Host` de la
+  petición: quien la manda podría poner el suyo y el correo legítimo de tu
+  organización llevaría a su página, con el token dentro. Sin esa variable la
+  recuperación no se ofrece.
+* **La IP de los frenos** es la de la conexión, salvo que venga del nginx de
+  la misma máquina (loopback): entonces la de `X-Real-IP`. Si pones el proxy
+  en otra máquina, todos los pedidos parecen de la misma IP y los frenos
+  saltan antes; nunca después.
 
 ## El contenido de los trabajos
 
@@ -82,3 +104,6 @@ Se dice aquí para que nadie lo dé por hecho:
   documentos lo piden.
 * **No limita cuánto imprime una llave.** Una llave filtrada puede vaciarte un
   rollo de etiquetas antes de que la revoques.
+* **No cierra las sesiones abiertas al cambiar una clave.** Un JWT emitido
+  antes sigue valiendo hasta que vence (siete días) o hasta que cambies
+  `PRINT_SECRETO_JWT`, que cierra las de todos.

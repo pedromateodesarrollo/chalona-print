@@ -95,6 +95,38 @@ class Peticion {
   }
 
   int enteroParam(String clave) => int.tryParse(params[clave] ?? '') ?? 0;
+
+  /// True si la conexión viene de esta misma máquina: el nginx de delante.
+  /// Solo entonces se cree lo que dicen las cabeceras del proxy; si el hub se
+  /// alcanza directo, cualquiera las escribe a su gusto.
+  bool get _desdeProxy => crudo.connectionInfo?.remoteAddress.isLoopback ?? false;
+
+  /// IP de quien llama, para los frenos. Detrás de nginx, la de `X-Real-IP`,
+  /// que nginx reescribe; no la primera de `X-Forwarded-For`, que es la que
+  /// mandó el cliente y nginx solo le añade la suya detrás: con ella, cambiar
+  /// la cabecera en cada intento se saltaba el freno.
+  String get ip {
+    final directa = crudo.connectionInfo?.remoteAddress.address ?? 'desconocida';
+    if (!_desdeProxy) return directa;
+    return crudo.headers.value('x-real-ip')?.trim() ??
+        crudo.headers.value('x-forwarded-for')?.split(',').last.trim() ??
+        directa;
+  }
+
+  /// URL con la que el mundo llega al hub, sin barra final:
+  /// `PRINT_URL_PUBLICA` o, si no se fijó, la que dice la petición.
+  ///
+  /// Vale para los enlaces que pide un admin con sesión (la petición es suya).
+  /// El de «¿Olvidaste tu clave?» NO la usa: ver [Config.urlPublica].
+  String get urlPublica {
+    if (config.urlPublica.isNotEmpty) return config.urlPublica;
+    final proto = (_desdeProxy
+            ? crudo.headers.value('x-forwarded-proto')?.split(',').first.trim()
+            : null) ??
+        crudo.requestedUri.scheme;
+    final host = crudo.headers.value(HttpHeaders.hostHeader)?.trim() ?? 'localhost';
+    return '$proto://$host';
+  }
 }
 
 class Respuesta {
@@ -365,7 +397,7 @@ class Servidor {
         ..add('vary', 'Origin');
     }
     pet.response.headers
-      ..set('access-control-allow-methods', 'GET,POST,PATCH,DELETE,OPTIONS')
+      ..set('access-control-allow-methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
       ..set('access-control-allow-headers', 'authorization,content-type,x-api-key')
       ..set('access-control-max-age', '86400');
   }

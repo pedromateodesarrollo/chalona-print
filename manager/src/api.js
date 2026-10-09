@@ -35,6 +35,7 @@ async function pide(metodo, ruta, cuerpo) {
 export const api = {
   get: (r) => pide('GET', r),
   post: (r, c) => pide('POST', r, c),
+  put: (r, c) => pide('PUT', r, c),
   patch: (r, c) => pide('PATCH', r, c),
   del: (r) => pide('DELETE', r),
 }

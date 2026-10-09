@@ -24,7 +24,7 @@ Una llave puede quedar encerrada en un dominio. Entonces solo ve sus impresoras,
 
 ### Sesión de persona
 
-La del panel. `POST /v1/auth/login` devuelve un JWT que dura siete días y viaja en la misma cabecera.
+La del panel. `POST /v1/auth/login` devuelve un JWT que dura siete días y viaja en la misma cabecera. Quien olvidó su clave pide un enlace para poner otra (`POST /v1/auth/recuperar`), que llega por el correo de salida de su organización.
 
 ## Dominios
 
@@ -93,6 +93,51 @@ Devuelve el token de sesión.
 |---|---|---|---|
 | `correo` | texto | sí |  |
 | `clave` | texto | sí |  |
+
+```json
+{ "token": "eyJ...", "usuario": { … } }
+```
+
+### `POST /v1/auth/recuperar`
+
+*Acceso: público*
+
+«¿Olvidaste tu clave?»: manda un enlace para poner una clave nueva.
+
+| Campo | Tipo | Obligatorio | |
+|---|---|---|---|
+| `correo` | texto | sí |  |
+
+Si el correo tiene cuenta y su organización tiene correo de salida, le llega un enlace `/#/activar/<token>` que sirve una vez y **vence en 1 hora**. La clave de antes sigue valiendo hasta que se use. La respuesta es siempre la misma, exista o no el correo, y el envío pasa después de contestar: ni el contenido ni lo que tarda dicen qué correos tienen cuenta. Cinco pedidos por minuto por IP y tres por hora por correo; pasado eso, `429 demasiados_intentos`. El enlace se arma con `PRINT_URL_PUBLICA`: sin ella, el hub no manda nada y `/salud` dice `recuperar: false`.
+
+```json
+{ "pedido": true }
+```
+
+### `GET /v1/auth/invitacion/:token`
+
+*Acceso: público*
+
+Si un enlace para poner clave sirve, y para qué correo.
+
+Lo usa la página del enlace antes de pedir la clave. Un token que no existe o ya se usó da `404 invitacion_invalida`.
+
+```json
+{ "correo": "ana@ejemplo.do", "vigente": true }
+```
+
+### `POST /v1/auth/activar`
+
+*Acceso: público*
+
+Pone la clave con un enlace y abre la sesión.
+
+| Campo | Tipo | Obligatorio | |
+|---|---|---|---|
+| `token` | texto | sí | El del enlace |
+| `clave` | texto | sí | Ocho caracteres o más |
+
+El enlace sirve una vez. Vencido o ya usado: `410 invitacion_vencida`.
 
 ```json
 { "token": "eyJ...", "usuario": { … } }
@@ -306,6 +351,8 @@ La revoca. La fila queda para saber qué imprimió.
 
 Los usuarios de la organización.
 
+`invitacion_vence` dice hasta cuándo vale el enlace para poner clave que tenga pendiente cada persona (null si no tiene).
+
 ### `POST /v1/usuarios`
 
 *Acceso: admin*
@@ -325,11 +372,81 @@ Da de alta a alguien.
 
 Cambia una clave. La propia siempre; la de otros, con rol admin.
 
+### `POST /v1/usuarios/:id/invitacion`
+
+*Acceso: admin*
+
+Un enlace para que esa persona ponga su clave ella misma.
+
+Sirve una vez y vence en siete días; invalida el enlace anterior de esa persona, y su clave sigue valiendo hasta que lo use. El enlace se devuelve una sola vez. Si la organización tiene correo de salida, además se le manda: `envio` es `null` sin correo de salida (compártelo tú), `{"enviado": true, "para": …}` o `{"enviado": false, "error": …, "detalle": …}` si el servidor de correo no lo aceptó (el enlace sirve igual).
+
+```json
+{
+  "enlace": "https://TU-HUB/#/activar/…",
+  "vence": "2026-10-16T12:00:00.000Z",
+  "envio": { "enviado": true, "para": "ana@ejemplo.do" }
+}
+```
+
 ### `DELETE /v1/usuarios/:id`
 
 *Acceso: admin*
 
 Da de baja a alguien.
+
+## Organización
+
+### `GET /v1/org/correo`
+
+*Acceso: admin*
+
+El correo de salida de la organización, sin la clave.
+
+Por él salen los enlaces para poner clave: el de «¿Olvidaste tu clave?» y el que genera un admin. La clave del servidor de correo no vuelve nunca: `clave_puesta` dice si hay una.
+
+```json
+{
+  "host": "smtp.gmail.com",
+  "puerto": 587,
+  "seguridad": "starttls",
+  "remitente": "avisos@tu-empresa.com",
+  "usuario": "avisos@tu-empresa.com",
+  "nombre": "print-server de tu empresa",
+  "clave_puesta": true,
+  "configurado": true
+}
+```
+
+### `PUT /v1/org/correo`
+
+*Acceso: admin*
+
+Pone o cambia el correo de salida.
+
+| Campo | Tipo | Obligatorio | |
+|---|---|---|---|
+| `host` | texto | sí | El servidor SMTP |
+| `puerto` | número | sí | 465 con `tls`, 587 con `starttls` |
+| `seguridad` | texto | no | `starttls` (por defecto), `tls` o `ninguna` (solo en una red propia) |
+| `remitente` | texto | sí | La dirección del «De:» |
+| `usuario` | texto | no | Sin usuario no se autentica |
+| `clave` | texto | no | Vacía o sin mandar: se queda la que estaba |
+| `nombre` | texto | no | El nombre que se ve en el «De:» |
+| `quitar` | sí/no | no | `true` borra el correo de salida |
+
+Devuelve lo mismo que el GET. Sin correo de salida en ninguna organización, la entrada del panel no ofrece «¿Olvidaste tu clave?».
+
+### `POST /v1/org/correo/prueba`
+
+*Acceso: admin*
+
+Manda un correo de prueba a quien lo pide.
+
+Va al correo de la persona con sesión (con una llave no hay a quién: `400 sin_destinatario`). Si el servidor no lo acepta, `502` con lo que contestó: `correo_autenticacion`, `correo_conexion`, `correo_tls`, `correo_sin_starttls`, `correo_rechazado` o `correo_tiempo`.
+
+```json
+{ "enviado": true, "para": "ana@ejemplo.do" }
+```
 
 ## Descargas
 
@@ -392,6 +509,12 @@ Retira un ejecutable publicado.
 
 Comprueba que el hub responde y llega a su base de datos.
 
+`recuperar` dice si la entrada puede ofrecer «¿Olvidaste tu clave?»: hace falta que alguna organización tenga correo de salida y que el hub tenga `PRINT_URL_PUBLICA`.
+
+```json
+{ "ok": true, "servicio": "print-server", "recuperar": true }
+```
+
 ## Errores
 
 | HTTP | Código | Cuándo |
@@ -399,10 +522,13 @@ Comprueba que el hub responde y llega a su base de datos.
 | 401 | `no_autenticado` | Falta la credencial o no vale |
 | 403 | `sin_permiso` · `requiere_admin` | La llave no llega a tanto |
 | 404 | `impresora_no_encontrada` | Ni por id ni por nombre |
+| 404 | `invitacion_invalida` | Ese enlace para poner clave no existe o ya se usó |
+| 410 | `invitacion_vencida` | El enlace venció o ya se usó: pide otro |
 | 409 | `impresora_ambigua` | Dos impresoras con ese nombre; manda el id |
 | 409 | `dominio_en_uso` | El dominio todavía tiene agentes o llaves |
 | 403 | `no_publicas_aqui` | Publicar descargas es de la organización que levantó el hub |
 | 409 | `impresora_ausente` | El agente ya no la ve en su sistema |
 | 413 | `contenido_grande` | Pasa del tope del hub |
 | 415 | `formato_no_soportado` | Esa impresora no admite ese formato |
-| 429 | `demasiados_intentos` | Freno del login |
+| 429 | `demasiados_intentos` | Freno del login, del registro y de «¿Olvidaste tu clave?» |
+| 502 | `correo_*` | El servidor de correo de la organización no aceptó el envío |

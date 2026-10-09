@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { api, sesion } from '../api.js'
 import Agentes from './Agentes.vue'
 import Impresoras from './Impresoras.vue'
@@ -8,19 +8,26 @@ import Llaves from './Llaves.vue'
 import Dominios from './Dominios.vue'
 import Descargas from './Descargas.vue'
 import Usuarios from './Usuarios.vue'
+import Organizacion from './Organizacion.vue'
 
 const yo = ref(null)
 const cargando = ref(true)
 const seccion = ref('impresoras')
 
-const modo = ref('entrar') // entrar | registrar
+const modo = ref('entrar') // entrar | registrar | recuperar
 const correo = ref('')
 const clave = ref('')
 const organizacion = ref('')
 const error = ref('')
 const enviando = ref(false)
 
-const secciones = [
+// «¿Olvidaste tu clave?» solo aparece si el hub tiene por dónde mandar el
+// enlace (`recuperar` de /salud: alguna organización con correo de salida).
+// Ofrecerlo sin eso sería prometer un correo que no va a llegar.
+const recuperar = ref(false)
+const pedido = ref(false)
+
+const secciones = computed(() => [
   ['impresoras', 'Impresoras', Impresoras],
   ['trabajos', 'Trabajos', Trabajos],
   ['agentes', 'Agentes', Agentes],
@@ -28,9 +35,11 @@ const secciones = [
   ['dominios', 'Dominios', Dominios],
   ['llaves', 'Llaves de API', Llaves],
   ['usuarios', 'Usuarios', Usuarios],
-]
+  ...(yo.value?.rol === 'admin' ? [['organizacion', 'Organización', Organizacion]] : []),
+])
 
 onMounted(async () => {
+  api.get('/salud').then((s) => (recuperar.value = s.recuperar === true)).catch(() => {})
   if (sesion.token) {
     try {
       yo.value = await api.get('/v1/yo')
@@ -40,6 +49,25 @@ onMounted(async () => {
   }
   cargando.value = false
 })
+
+function cambiaModo(m) {
+  modo.value = m
+  error.value = ''
+  pedido.value = false
+}
+
+async function pideEnlace() {
+  error.value = ''
+  enviando.value = true
+  try {
+    await api.post('/v1/auth/recuperar', { correo: correo.value })
+    pedido.value = true
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    enviando.value = false
+  }
+}
 
 async function entra() {
   error.value = ''
@@ -63,12 +91,39 @@ async function entra() {
 function sale() {
   sesion.token = ''
   yo.value = null
+  seccion.value = 'impresoras'
 }
 </script>
 
 <template>
   <div v-if="cargando" class="contenedor" style="padding: 60px 22px">
     <p class="apagado">Cargando…</p>
+  </div>
+
+  <!-- ¿Olvidaste tu clave? -->
+  <div v-else-if="!yo && modo === 'recuperar'" class="contenedor" style="padding: 56px 22px; max-width: 460px">
+    <h1 style="font-size: 28px">Clave nueva</h1>
+    <template v-if="pedido">
+      <p class="exito">
+        Si ese correo tiene cuenta, te llegó un enlace para poner una clave nueva.
+        Vence en 1 hora. Si no llega, mira en el correo no deseado o pídele uno a
+        quien administra.
+      </p>
+    </template>
+    <template v-else>
+      <p class="apagado">Te mandamos a tu correo un enlace para ponerla.</p>
+      <form class="caja" @submit.prevent="pideEnlace">
+        <label>Correo</label>
+        <input v-model="correo" type="email" autocomplete="email" required />
+        <p v-if="error" class="aviso" style="margin-top: 12px">{{ error }}</p>
+        <button class="boton" style="margin-top: 18px" :disabled="enviando">
+          {{ enviando ? 'Un momento…' : 'Mandarme el enlace' }}
+        </button>
+      </form>
+    </template>
+    <p class="apagado" style="margin-top: 18px; font-size: 14px">
+      <a href="#" @click.prevent="cambiaModo('entrar')">Volver a entrar</a>
+    </p>
   </div>
 
   <!-- Entrar / crear organización -->
@@ -87,16 +142,25 @@ function sale() {
         <input v-model="organizacion" placeholder="Mi empresa" required />
       </template>
       <label>Correo</label>
-      <input v-model="correo" type="email" required />
+      <input v-model="correo" type="email" autocomplete="email" required />
       <label>Clave</label>
-      <input v-model="clave" type="password" required minlength="8" />
+      <input
+        v-model="clave"
+        type="password"
+        :autocomplete="modo === 'entrar' ? 'current-password' : 'new-password'"
+        required
+        minlength="8"
+      />
       <p v-if="error" class="aviso" style="margin-top: 12px">{{ error }}</p>
       <button class="boton" style="margin-top: 18px" :disabled="enviando">
         {{ enviando ? 'Un momento…' : modo === 'entrar' ? 'Entrar' : 'Crear' }}
       </button>
     </form>
+    <p v-if="modo === 'entrar' && recuperar" style="margin-top: 14px; font-size: 14px">
+      <a href="#" @click.prevent="cambiaModo('recuperar')">¿Olvidaste tu clave?</a>
+    </p>
     <p class="apagado" style="margin-top: 18px; font-size: 14px">
-      <a href="#" @click.prevent="modo = modo === 'entrar' ? 'registrar' : 'entrar'">
+      <a href="#" @click.prevent="cambiaModo(modo === 'entrar' ? 'registrar' : 'entrar')">
         {{ modo === 'entrar' ? 'Crear una organización nueva' : 'Ya tengo cuenta' }}
       </a>
     </p>
@@ -122,7 +186,7 @@ function sale() {
         {{ yo.organizacion }} · {{ yo.correo }} ({{ yo.rol }})
       </p>
       <component
-        :is="secciones.find((s) => s[0] === seccion)[2]"
+        :is="(secciones.find((s) => s[0] === seccion) || secciones[0])[2]"
         :yo="yo"
       />
     </main>

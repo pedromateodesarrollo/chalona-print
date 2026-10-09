@@ -3,6 +3,43 @@
 Las versiones siguen [SemVer](https://semver.org/lang/es/). El número de
 protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
 
+## Sin publicar
+
+### Hub
+
+* **Correo de salida por organización** (migración 0005): una cuenta SMTP
+  propia —TLS en el 465, STARTTLS en el 587 o sin cifrar en una red propia—
+  con `GET`/`PUT /v1/org/correo` y `POST /v1/org/correo/prueba`, solo para
+  admin. La clave se guarda para poder autenticar, pero la API no la devuelve
+  nunca. El cliente SMTP es del hub, con `dart:io`: ninguna dependencia nueva.
+* **Enlace de un solo uso para poner clave** (migración 0006): solo se guarda
+  su sha256. `GET /v1/auth/invitacion/:token` dice si sirve y
+  `POST /v1/auth/activar` pone la clave y abre la sesión. Un admin genera uno
+  para alguien de su organización con `POST /v1/usuarios/:id/invitacion`
+  (siete días); sale por el correo de salida si lo hay y, si no, se comparte a
+  mano. Las personas se siguen creando con clave.
+* **«¿Olvidaste tu clave?»**: `POST /v1/auth/recuperar` manda un enlace que
+  vence en una hora por el correo de salida de la organización de esa
+  persona. Contesta siempre lo mismo y manda el correo después de contestar,
+  así que no delata qué correos tienen cuenta; cinco pedidos por minuto por IP
+  y tres por hora por correo. `/salud` dice si se ofrece (`recuperar`).
+* `PRINT_URL_PUBLICA`, la dirección del hub. El enlace de recuperación se
+  arma solo con ella: sin ella no se ofrece.
+* Los frenos de login y registro toman la IP de `X-Real-IP` cuando la
+  petición viene del nginx de la misma máquina, y la de la conexión si no.
+  Antes tomaban la primera de `X-Forwarded-For`, que escribe el cliente:
+  cambiándola en cada intento, el freno no frenaba.
+* Primeras pruebas contra Postgres (`hub/test/hub_test.dart`, con
+  `PRINT_PRUEBA_DATABASE_URL`; sin ella se saltan).
+
+### Sitio
+
+* En la entrada, «¿Olvidaste tu clave?», solo si el hub tiene por dónde
+  mandar el enlace.
+* La página del enlace (`#/activar/<token>`) pone la clave y entra.
+* Organización → Correo de salida, con correo de prueba, para el admin.
+* Usuarios → «Enlace para poner clave» por persona.
+
 ## 0.4.0 — 2026-10-08
 
 ### Agente en Windows: vuelve la ventana

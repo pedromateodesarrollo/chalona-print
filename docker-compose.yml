@@ -29,6 +29,8 @@ services:
       PRINT_PUERTO: '3070'
       PRINT_SECRETO_JWT: cambia-esto-en-produccion
       PRINT_REGISTRO: abierto
+      # Con ella se arma el enlace de «¿Olvidaste tu clave?». Pon la tuya.
+      PRINT_URL_PUBLICA: http://localhost:3070
     ports:
       - '3070:3070'
 

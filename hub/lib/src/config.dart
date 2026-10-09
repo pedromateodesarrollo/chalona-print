@@ -20,6 +20,7 @@ class Config {
     required this.rutaDescargas,
     required this.orgPublicadora,
     required this.secretoEfimero,
+    this.urlPublica = '',
   });
 
   /// `postgres://usuario:clave@host:5432/base`
@@ -73,6 +74,17 @@ class Config {
   /// Vale para desarrollo; en producción significa que un reinicio saca a todos.
   final bool secretoEfimero;
 
+  /// URL con la que el mundo llega al hub (`https://print.ejemplo.com`), sin
+  /// barra final. Con ella se arman los enlaces para poner clave.
+  ///
+  /// El de «¿Olvidaste tu clave?» sale **solo** de aquí, nunca de las
+  /// cabeceras: lo pide cualquiera sin credencial, y si el enlace se armara
+  /// con el `Host` de la petición, quien la manda con `Host: suyo.com` haría
+  /// que el correo legítimo de la organización llevara a la víctima a su
+  /// página, con el token dentro. Vacía = no se ofrece la recuperación; los
+  /// enlaces que genera un admin (con sesión) se arman con el `Host`.
+  final String urlPublica;
+
   static const _reglas = <String>[
     'PRINT_DATABASE_URL   (obligatoria)  postgres://usuario:clave@host:5432/base',
     'PRINT_PUERTO         (3070)',
@@ -85,6 +97,7 @@ class Config {
     'PRINT_MANAGER        (ruta al manager compilado; por defecto ./manager)',
     'PRINT_DESCARGAS      (ruta a los ejecutables del agente; por defecto ./descargas)',
     'PRINT_ORG_PUBLICADORA(qué organización puede publicar ejecutables; por defecto 1)',
+    'PRINT_URL_PUBLICA    (https://tu-hub; sin ella no se ofrece «¿Olvidaste tu clave?»)',
   ];
 
   static String get ayuda => _reglas.join('\n  ');
@@ -101,6 +114,10 @@ class Config {
     final registro = (e['PRINT_REGISTRO'] ?? 'abierto').trim().toLowerCase();
     if (!const ['abierto', 'invitacion', 'cerrado'].contains(registro)) {
       throw ArgumentError('PRINT_REGISTRO debe ser abierto, invitacion o cerrado');
+    }
+    final urlPublica = (e['PRINT_URL_PUBLICA'] ?? '').trim().replaceAll(RegExp(r'/+$'), '');
+    if (urlPublica.isNotEmpty && !RegExp(r'^https?://[^/\s]+').hasMatch(urlPublica)) {
+      throw ArgumentError('PRINT_URL_PUBLICA es una dirección como https://print.ejemplo.com');
     }
     return Config(
       urlBd: url,
@@ -120,6 +137,7 @@ class Config {
       rutaManager: (e['PRINT_MANAGER'] ?? 'manager').trim(),
       rutaDescargas: (e['PRINT_DESCARGAS'] ?? 'descargas').trim(),
       orgPublicadora: int.tryParse(e['PRINT_ORG_PUBLICADORA'] ?? '') ?? 1,
+      urlPublica: urlPublica,
     );
   }
 

@@ -16,6 +16,7 @@ import 'src/http/rutas_descargas.dart';
 import 'src/http/rutas_dominios.dart';
 import 'src/http/rutas_impresoras.dart';
 import 'src/http/rutas_llaves.dart';
+import 'src/http/rutas_org.dart';
 import 'src/http/rutas_trabajos.dart';
 import 'src/http/servidor.dart';
 import 'src/log.dart';
@@ -54,6 +55,7 @@ class Hub {
     registraRutasImpresoras(servidor, agentes);
     registraRutasTrabajos(servidor, agentes, cola);
     registraRutasLlaves(servidor);
+    registraRutasOrg(servidor);
 
     // Al arrancar, ningún agente está conectado: lo que diga la base es de
     // antes del reinicio. Se limpia para no enseñar agentes fantasma.
@@ -71,6 +73,13 @@ class Hub {
         'hub',
         'PRINT_SECRETO_JWT no está definida: se generó una al vuelo, '
         'así que un reinicio cierra la sesión de todos. Fíjala en producción.',
+      );
+    }
+    if (config.urlPublica.isEmpty) {
+      log.aviso(
+        'hub',
+        'PRINT_URL_PUBLICA no está definida: la entrada del panel no ofrece '
+        '«¿Olvidaste tu clave?», aunque haya correo de salida.',
       );
     }
     return Hub._(config, bd, servidor, cola, http);
