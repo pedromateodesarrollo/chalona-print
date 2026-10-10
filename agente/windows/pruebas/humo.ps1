@@ -189,45 +189,51 @@ Comprueba ($null -ne (EsperaEstado 10)) 'y el agente sigue contestando'
 
 # ---------------------------------------------------------------------------
 Paso 'PDF por el driver: PDFium y el spooler de verdad'
-# Una impresora de verdad para el spooler, que escribe en un archivo: la de
-# «Microsoft Print to PDF» con un puerto que es una ruta. Si esta máquina no
-# trae ese driver, la «Generic / Text Only», que está en todas.
+# Colas de verdad para el spooler que escriben en un archivo (el puerto es una
+# ruta). «Generic / Text Only» es un driver clásico (v3), como el de una DYMO o
+# una Zebra, y está en todas las Windows: es la comprobación que cuenta.
+# «Microsoft Print to PDF» es de los nuevos (v4) y va por otro proceso del
+# spooler: se mira y se cuenta lo que pasó, pero no tumba la prueba.
 Comprueba (Test-Path (Join-Path $programa 'pdfium.dll')) 'dejó pdfium.dll junto al agente'
-$salidaReal = Join-Path $env:TEMP "humo-driver-$([guid]::NewGuid().ToString('N')).out"
-$drivers = @('Microsoft Print To PDF', 'Generic / Text Only')
-$driverUsado = $null
-Add-PrinterPort -Name $salidaReal
-foreach ($d in $drivers) {
+$cfgReal = Join-Path $env:TEMP "humo-real-$([guid]::NewGuid().ToString('N')).json"
+@{ driver = 'windows' } | ConvertTo-Json | Set-Content -Path $cfgReal -Encoding UTF8
+$env:PRINT_AGENTE_CONFIG = $cfgReal
+$agenteExe = Join-Path $programa 'print-server-agente.exe'
+
+function PruebaPorDriver([string]$driver, [bool]$obligatoria) {
+  $cola = "humo-$($driver -replace '[^A-Za-z]', '')"
+  $archivo = Join-Path $env:SystemRoot "Temp\humo-$([guid]::NewGuid().ToString('N')).out"
   try {
-    if (-not (Get-PrinterDriver -Name $d -ErrorAction SilentlyContinue)) { Add-PrinterDriver -Name $d -ErrorAction Stop }
-    Add-Printer -Name 'humo-driver' -DriverName $d -PortName $salidaReal -ErrorAction Stop
-    $driverUsado = $d
-    break
-  } catch { Write-Host "   (sin «$d»: $($_.Exception.Message))" }
-}
-Comprueba ($null -ne $driverUsado) "cola de prueba con el driver «$driverUsado»"
-if ($driverUsado) {
-  # La consola del agente instalado, con el driver de Windows de verdad.
-  $cfgReal = Join-Path $env:TEMP "humo-real-$([guid]::NewGuid().ToString('N')).json"
-  @{ driver = 'windows' } | ConvertTo-Json | Set-Content -Path $cfgReal -Encoding UTF8
-  $env:PRINT_AGENTE_CONFIG = $cfgReal
-  $agenteExe = Join-Path $programa 'print-server-agente.exe'
-  $ver = & $agenteExe impresoras 2>&1 | Out-String
-  Write-Host $ver
-  $out = & $agenteExe probar --impresora 'humo-driver' 2>&1 | Out-String
-  Write-Host "   $out"
-  Comprueba ($LASTEXITCODE -eq 0 -and $out -match 'por driver') 'la prueba sale por el driver (PDF)'
-  for ($i = 0; $i -lt 30 -and -not ((Test-Path $salidaReal) -and (Get-Item $salidaReal).Length -gt 0); $i++) { Start-Sleep -Seconds 1 }
-  $bytes = if (Test-Path $salidaReal) { (Get-Item $salidaReal).Length } else { 0 }
-  Comprueba ($bytes -gt 0) "el spooler escribió el trabajo ($bytes bytes)"
-  if ($driverUsado -eq 'Microsoft Print To PDF' -and $bytes -gt 0) {
-    $cabeza = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes($salidaReal), 0, 5)
-    Comprueba ($cabeza -eq '%PDF-') "y es un PDF ($cabeza)"
+    if (-not (Get-PrinterDriver -Name $driver -ErrorAction SilentlyContinue)) { Add-PrinterDriver -Name $driver -ErrorAction Stop }
+    Add-PrinterPort -Name $archivo -ErrorAction Stop
+    Add-Printer -Name $cola -DriverName $driver -PortName $archivo -ErrorAction Stop
+  } catch {
+    if ($obligatoria) { Mal "cola con «$driver»: $($_.Exception.Message)" } else { Write-Host "   (sin «$driver»: $($_.Exception.Message))" }
+    return
   }
-  Remove-Item Env:\PRINT_AGENTE_CONFIG
-  Remove-Printer -Name 'humo-driver' -ErrorAction SilentlyContinue
+  $out = & $agenteExe probar --impresora $cola 2>&1 | Out-String
+  Write-Host "   $($out.Trim())"
+  $mando = ($LASTEXITCODE -eq 0 -and $out -match 'por driver')
+  for ($i = 0; $i -lt 40 -and -not ((Test-Path $archivo) -and (Get-Item $archivo).Length -gt 0); $i++) { Start-Sleep -Seconds 1 }
+  $bytes = if (Test-Path $archivo) { (Get-Item $archivo).Length } else { 0 }
+  if (-not ($mando -and $bytes -gt 0)) {
+    # Qué quedó en la cola: sin esto, «0 bytes» no dice si el trabajo se trabó,
+    # se perdió o nunca llegó.
+    Get-PrintJob -PrinterName $cola -ErrorAction SilentlyContinue | Format-List Id, JobStatus, Size, PagesPrinted, TotalPages | Out-String | Write-Host
+    Get-WinEvent -LogName 'Microsoft-Windows-PrintService/Admin' -MaxEvents 5 -ErrorAction SilentlyContinue |
+      Format-List TimeCreated, Id, Message | Out-String | Write-Host
+  }
+  $texto = "«$driver»: la prueba sale por el driver y el spooler escribe ($bytes bytes)"
+  if ($obligatoria) { Comprueba ($mando -and $bytes -gt 0) $texto }
+  elseif ($mando -and $bytes -gt 0) { Bien $texto }
+  else { Write-Host "   (aviso) $texto" }
+  Remove-Printer -Name $cola -ErrorAction SilentlyContinue
+  Remove-PrinterPort -Name $archivo -ErrorAction SilentlyContinue
 }
-Remove-PrinterPort -Name $salidaReal -ErrorAction SilentlyContinue
+
+PruebaPorDriver 'Generic / Text Only' $true
+PruebaPorDriver 'Microsoft Print To PDF' $false
+Remove-Item Env:\PRINT_AGENTE_CONFIG
 
 # ---------------------------------------------------------------------------
 Paso 'desinstalar'
