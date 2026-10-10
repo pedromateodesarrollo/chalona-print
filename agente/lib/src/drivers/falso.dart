@@ -55,4 +55,7 @@ class DriverFalso implements Driver {
     'texto' => 'txt',
     _ => 'bin',
   };
+
+  @override
+  Future<(double, double)?> papel(String impresora) async => null;
 }

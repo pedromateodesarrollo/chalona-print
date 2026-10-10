@@ -13,4 +13,5 @@ export 'src/drivers/falso.dart';
 export 'src/hechos.dart';
 export 'src/log.dart';
 export 'src/panel.dart';
+export 'src/prueba.dart';
 export 'src/registro.dart';

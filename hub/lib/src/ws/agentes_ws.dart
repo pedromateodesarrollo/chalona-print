@@ -49,6 +49,29 @@ class HubAgentes {
   }
   int get cuantos => _conectados.length;
 
+  /// El protocolo fijado de cada cola de un agente (`sistema` → protocolo).
+  /// Las que no tienen ninguno no van: ahí manda lo que deduce el agente.
+  Future<Map<String, String>> protocolosDe(int agente) async {
+    final filas = await bd.filas(
+      '''select i.sistema, print.protocolo(i) as protocolo
+           from print.impresora i where i.agente = @a''',
+      {'a': agente},
+    );
+    return {
+      for (final f in filas)
+        if (f['protocolo'] != null) f['sistema'] as String: f['protocolo'] as String,
+    };
+  }
+
+  /// Le avisa a cada agente conectado de la organización que los protocolos
+  /// cambiaron. Al de un modelo le tocan todas las del modelo, estén en el
+  /// agente que estén.
+  Future<void> avisaProtocolos(int org) async {
+    for (final c in _conectados.values.where((c) => c.org == org).toList()) {
+      c.enviar({'tipo': Protocolo.protocolos, 'protocolos': await protocolosDe(c.agente)});
+    }
+  }
+
   /// Devuelve true si el frame salió. False significa agente desconectado:
   /// el trabajo se queda en cola, no se pierde.
   bool enviar(int agente, Map<String, Object?> frame) {
@@ -159,6 +182,7 @@ class HubAgentes {
               'tipo': Protocolo.holaOk,
               'protocolo': Protocolo.version,
               'agente': agente,
+              'protocolos': await protocolosDe(agente),
             }));
             log.info('ws', 'agente $agente conectado (v${frame['version']})');
             alConectar?.call(agente);
@@ -236,9 +260,10 @@ class HubAgentes {
       await bd.ejecuta(
         '''insert into print.impresora
              (org, agente, dominio, sistema, nombre, estado, detalle, cola,
-              predeterminada, formatos, visto, fabricante, modelo, conexion, serie)
+              predeterminada, formatos, visto, fabricante, modelo, conexion, serie,
+              protocolo_auto)
            values (@org, @ag, @dom, @sis, @nom, @est, @det, @cola, @pred, @fmt, now(),
-                   @fab, @mod, @con, @ser)
+                   @fab, @mod, @con, @ser, @pauto)
            on conflict (agente, sistema) do update set
              estado     = excluded.estado,
              detalle    = excluded.detalle,
@@ -249,6 +274,7 @@ class HubAgentes {
              modelo     = excluded.modelo,
              conexion   = excluded.conexion,
              serie      = excluded.serie,
+             protocolo_auto = excluded.protocolo_auto,
              visto      = now()''',
         {
           'org': org,
@@ -269,6 +295,9 @@ class HubAgentes {
           'mod': c['modelo']?.toString() ?? '',
           'con': c['conexion']?.toString() ?? '',
           'ser': c['serie']?.toString() ?? '',
+          // Lo que deduce el agente (desde la 0.5.0). El fijado —`protocolo`—
+          // no se toca aquí: es de quien lo eligió en el panel.
+          'pauto': c['protocolo']?.toString() ?? '',
         },
       );
     }

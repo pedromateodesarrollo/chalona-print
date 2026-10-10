@@ -164,6 +164,11 @@ namespace PrintServer
                 var yo = Rutas.EsteEjecutable;
                 if (!Rutas.EsLaMisma(yo, Rutas.Ventana)) CopiaConReintentos(yo, Rutas.Ventana);
                 CopiaConReintentos(agenteNuevo, Rutas.Agente);
+                // PDFium va junto al agente: Windows busca la DLL primero en la
+                // carpeta del .exe, y ahí la busca el agente. Con ella imprime
+                // PDF por el driver de cualquier impresora.
+                ExtraeJunto("pdfium.dll", registro);
+                ExtraeJunto("pdfium-licencias.txt", registro);
             }
             finally
             {
@@ -394,6 +399,33 @@ namespace PrintServer
                 {
                     p.Dispose();
                 }
+            }
+        }
+
+        /// <summary>
+        /// Saca un recurso del paquete a Archivos de programa, junto al agente.
+        /// Un paquete compilado sin él (los de antes de la 0.5.0) sigue
+        /// instalando: el agente solo no ofrece PDF.
+        /// </summary>
+        static void ExtraeJunto(string nombre, RegistroArchivo registro)
+        {
+            var temporal = Path.Combine(Path.GetTempPath(), $"print-server-{Guid.NewGuid():N}-{nombre}");
+            try
+            {
+                using (var r = Assembly.GetExecutingAssembly().GetManifestResourceStream(nombre))
+                {
+                    if (r == null)
+                    {
+                        registro.Escribe("instalar", $"este paquete no trae {nombre}");
+                        return;
+                    }
+                    using (var f = File.Create(temporal)) r.CopyTo(f);
+                }
+                CopiaConReintentos(temporal, Path.Combine(Rutas.Programa, nombre));
+            }
+            finally
+            {
+                try { File.Delete(temporal); } catch (Exception) { }
             }
         }
 

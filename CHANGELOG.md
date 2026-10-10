@@ -5,6 +5,28 @@ protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
 
 ## Sin publicar
 
+### Impresión estándar por el driver
+
+* **El protocolo de cada impresora** (migración 0007): `driver` —PDF por su
+  driver, el estándar, como la página de prueba de Windows—, `zpl`, `epl`, `dp`
+  o `texto`. Se fija una vez por modelo y vale para todas las de ese modelo, o
+  para una cola sola; sin ninguno manda lo que deduce el agente
+  (`protocolo_auto`). Columna «Protocolo» en Impresoras del panel. Viaja en
+  `hola_ok`, en el frame nuevo `protocolos` y en cada `trabajo`.
+* **Agente 0.5.0: PDF por el driver en Windows sin programas externos.** Trae
+  PDFium (el motor de PDF de Chrome, `chromium/8086`, fijado por sha256) junto
+  al agente. Antes de imprimir elige, entre los papeles del driver, el que mide
+  como la página (±3 mm; en una DYMO, el «30323 Shipping» para una etiqueta de
+  54 × 102 mm); si no hay, lo pide a medida, y si tampoco, encoge la página.
+  SumatraPDF queda solo para las imágenes.
+* **La página de prueba sale por el protocolo**: por el driver es un PDF del
+  tamaño del papel que tiene puesto la cola, y una etiqueta alargada se escribe
+  a lo largo. Lo que no es una etiquetadora conocida va por el driver: a una
+  DYMO el texto crudo de antes no le imprimía nada y quedaba «hecho».
+* Consola del agente: `probar` usa la misma prueba (con `--protocolo`) e
+  `imprimir --archivo` manda un archivo tal cual. La prueba de humo de Windows
+  imprime de verdad por el spooler, con PDFium.
+
 ### Hub
 
 * **Correo de salida por organización** (migración 0005): una cuenta SMTP

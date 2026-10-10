@@ -181,13 +181,24 @@ export const puntos = [
     "detalle": "",
     "cola": 0,
     "formatos": ["raw", "texto"],
+    "protocolo": null,
+    "protocolo_modelo": "zpl",
+    "protocolo_auto": "zpl",
+    "protocolo_efectivo": "zpl",
     "agente": 2,
     "agente_conectado": true
   }]
 }`,
     nota:
       'Estados: `lista`, `ocupada`, `pausada`, `sin_papel`, `error`, `ausente` ' +
-      '(el agente ya no la ve) y `sin_agente` (la computadora está apagada).',
+      '(el agente ya no la ve) y `sin_agente` (la computadora está apagada).\n\n' +
+      '**Protocolo** —cómo se le habla a la impresora—: `driver` (PDF por su driver, ' +
+      'el estándar: sirve con cualquier impresora que tenga driver, como la página de ' +
+      'prueba de Windows), `zpl`, `epl`, `dp` (Direct Protocol) o `texto`. Se fija una ' +
+      'vez por modelo (`protocolo_modelo`, para todas las de ese modelo de la ' +
+      'organización) o para una cola sola (`protocolo`, que manda sobre el del modelo). ' +
+      'Sin ninguno vale el que deduce el agente (`protocolo_auto`, desde el agente ' +
+      '0.5.0). `protocolo_efectivo` es el que se usa.',
   },
   {
     grupo: 'Impresoras',
@@ -201,10 +212,18 @@ export const puntos = [
     metodo: 'PATCH',
     ruta: '/v1/impresoras/:id',
     acceso: 'sesión',
-    resumen: 'Cambia el nombre visible o la marca de predeterminada.',
+    resumen:
+      'Cambia el nombre visible, la marca de predeterminada o el protocolo. ' +
+      '`protocolo_modelo` fija el de todas las del modelo de esta impresora (lo normal ' +
+      'la primera vez que aparece un modelo); `protocolo`, el de esta cola sola. `null` ' +
+      'lo quita. Un valor fuera de la lista da 400 `protocolo_invalido`; fijar el del ' +
+      'modelo de una impresora sin modelo, 409 `sin_modelo`. Los agentes conectados ' +
+      'reciben el cambio al momento.',
     cuerpo: [
       ['nombre', 'texto', 'no', 'El nombre con el que la ve la gente'],
       ['predeterminada', 'sí/no', 'no', 'Una por agente'],
+      ['protocolo_modelo', 'texto o null', 'no', '`driver`, `zpl`, `epl`, `dp` o `texto`, para todas las de su modelo'],
+      ['protocolo', 'texto o null', 'no', 'Lo mismo, solo para esta cola'],
     ],
   },
 

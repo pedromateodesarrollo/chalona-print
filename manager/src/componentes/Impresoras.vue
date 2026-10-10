@@ -78,6 +78,49 @@ async function carga() {
   }
 }
 
+/// Cómo se le habla a cada impresora. `driver` es el estándar: PDF por su
+/// driver, como la página de prueba de Windows; sirve con cualquiera que tenga
+/// driver. Los demás son el lenguaje crudo de una etiquetadora.
+const protocolos = {
+  driver: 'Driver (PDF)',
+  zpl: 'ZPL',
+  epl: 'EPL',
+  dp: 'Direct Protocol',
+  texto: 'Texto',
+}
+/// Por cola, en vez de para todo el modelo. Se marca solo cuando una cola se
+/// sale del de su modelo (dos Honeywell iguales, una en EPL y otra en DP).
+const soloCola = ref({})
+
+const protocoloFijado = (i) => i.protocolo || i.protocolo_modelo || ''
+
+function origenProtocolo(i) {
+  if (i.protocolo) return 'solo esta impresora'
+  if (i.protocolo_modelo) return `todas las ${i.modelo}`
+  if (i.protocolo_auto) return 'lo deduce el agente'
+  return 'agente sin actualizar: no lo dice'
+}
+
+/// La primera vez que aparece un modelo se fija su protocolo y vale para todas
+/// las de ese modelo. Elegir «Automático» lo quita y vuelve a mandar el agente.
+async function fijaProtocolo(i, valor) {
+  const v = valor === '' ? null : valor
+  const cuerpo =
+    soloCola.value[i.id] || !i.modelo ? { protocolo: v } : { protocolo_modelo: v, protocolo: null }
+  try {
+    await api.patch(`/v1/impresoras/${i.id}`, cuerpo)
+    mensaje.value =
+      v === null
+        ? `«${i.nombre}» vuelve al protocolo automático.`
+        : cuerpo.protocolo_modelo !== undefined
+          ? `Todas las ${i.modelo} van por ${protocolos[v]}.`
+          : `«${i.nombre}» va por ${protocolos[v]}.`
+    await carga()
+  } catch (e) {
+    mensaje.value = `No se pudo: ${e.message}`
+  }
+}
+
 async function renombra(i) {
   await api.patch(`/v1/impresoras/${i.id}`, { nombre: nombreNuevo.value })
   editando.value = null
@@ -140,7 +183,7 @@ onUnmounted(() => clearInterval(temporizador))
   <table v-else>
     <thead>
       <tr>
-        <th>Impresora</th><th>Estado</th><th>Computadora</th>
+        <th>Impresora</th><th>Estado</th><th>Protocolo</th><th>Computadora</th>
         <th>Dominio</th><th>Cola</th><th></th>
       </tr>
     </thead>
@@ -167,6 +210,24 @@ onUnmounted(() => clearInterval(temporizador))
             {{ textos[i.estado] || i.estado }}
           </span>
           <div v-if="i.detalle" class="apagado" style="font-size: 13px">{{ i.detalle }}</div>
+        </td>
+        <td>
+          <select
+            :value="protocoloFijado(i)"
+            style="width: auto"
+            @change="fijaProtocolo(i, $event.target.value)"
+          >
+            <option value="">
+              Automático{{ i.protocolo_auto ? ` (${protocolos[i.protocolo_auto] || i.protocolo_auto})` : '' }}
+            </option>
+            <option v-for="(texto, clave) in protocolos" :key="clave" :value="clave">{{ texto }}</option>
+          </select>
+          <div class="apagado" style="font-size: 12px">
+            {{ origenProtocolo(i) }}
+            <label v-if="i.modelo" style="margin-left: 6px; white-space: nowrap">
+              <input type="checkbox" v-model="soloCola[i.id]" /> solo esta
+            </label>
+          </div>
         </td>
         <td>
           {{ i.agente_nombre }}

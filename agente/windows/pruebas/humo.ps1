@@ -122,7 +122,7 @@ if (-not $e) { MuestraRegistro }
 Comprueba ($null -ne $e) 'el panel del agente contesta'
 if ($e) {
   Comprueba ($e.modo -eq 'servicio') "dice que corre como servicio ($($e.modo))"
-  Comprueba ($e.version -eq '0.4.0') "versión del agente ($($e.version))"
+  Comprueba ($e.version -eq '0.5.0') "versión del agente ($($e.version))"
   Comprueba ($e.agente -eq 99) 'conserva el número de agente de la conexión vieja'
   # Las mira al arrancar, aunque el hub no conteste.
   for ($i = 0; $i -lt 10 -and @($e.impresoras).Count -eq 0; $i++) { Start-Sleep -Seconds 1; $e = Estado }
@@ -186,6 +186,48 @@ Comprueba ($r.codigo -ne 0) 'falla'
 Comprueba ($r.mensaje -match 'No pude llegar al hub') "explica: $($r.mensaje)"
 Comprueba ((Servicio 'print-server').Status -eq 'Running') 'el servicio sigue en marcha'
 Comprueba ($null -ne (EsperaEstado 10)) 'y el agente sigue contestando'
+
+# ---------------------------------------------------------------------------
+Paso 'PDF por el driver: PDFium y el spooler de verdad'
+# Una impresora de verdad para el spooler, que escribe en un archivo: la de
+# «Microsoft Print to PDF» con un puerto que es una ruta. Si esta máquina no
+# trae ese driver, la «Generic / Text Only», que está en todas.
+Comprueba (Test-Path (Join-Path $programa 'pdfium.dll')) 'dejó pdfium.dll junto al agente'
+$salidaReal = Join-Path $env:TEMP "humo-driver-$([guid]::NewGuid().ToString('N')).out"
+$drivers = @('Microsoft Print To PDF', 'Generic / Text Only')
+$driverUsado = $null
+Add-PrinterPort -Name $salidaReal
+foreach ($d in $drivers) {
+  try {
+    if (-not (Get-PrinterDriver -Name $d -ErrorAction SilentlyContinue)) { Add-PrinterDriver -Name $d -ErrorAction Stop }
+    Add-Printer -Name 'humo-driver' -DriverName $d -PortName $salidaReal -ErrorAction Stop
+    $driverUsado = $d
+    break
+  } catch { Write-Host "   (sin «$d»: $($_.Exception.Message))" }
+}
+Comprueba ($null -ne $driverUsado) "cola de prueba con el driver «$driverUsado»"
+if ($driverUsado) {
+  # La consola del agente instalado, con el driver de Windows de verdad.
+  $cfgReal = Join-Path $env:TEMP "humo-real-$([guid]::NewGuid().ToString('N')).json"
+  @{ driver = 'windows' } | ConvertTo-Json | Set-Content -Path $cfgReal -Encoding UTF8
+  $env:PRINT_AGENTE_CONFIG = $cfgReal
+  $agenteExe = Join-Path $programa 'print-server-agente.exe'
+  $ver = & $agenteExe impresoras 2>&1 | Out-String
+  Write-Host $ver
+  $out = & $agenteExe probar --impresora 'humo-driver' 2>&1 | Out-String
+  Write-Host "   $out"
+  Comprueba ($LASTEXITCODE -eq 0 -and $out -match 'por driver') 'la prueba sale por el driver (PDF)'
+  for ($i = 0; $i -lt 30 -and -not ((Test-Path $salidaReal) -and (Get-Item $salidaReal).Length -gt 0); $i++) { Start-Sleep -Seconds 1 }
+  $bytes = if (Test-Path $salidaReal) { (Get-Item $salidaReal).Length } else { 0 }
+  Comprueba ($bytes -gt 0) "el spooler escribió el trabajo ($bytes bytes)"
+  if ($driverUsado -eq 'Microsoft Print To PDF' -and $bytes -gt 0) {
+    $cabeza = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes($salidaReal), 0, 5)
+    Comprueba ($cabeza -eq '%PDF-') "y es un PDF ($cabeza)"
+  }
+  Remove-Item Env:\PRINT_AGENTE_CONFIG
+  Remove-Printer -Name 'humo-driver' -ErrorAction SilentlyContinue
+}
+Remove-PrinterPort -Name $salidaReal -ErrorAction SilentlyContinue
 
 # ---------------------------------------------------------------------------
 Paso 'desinstalar'

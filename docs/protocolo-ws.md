@@ -70,7 +70,7 @@ o `fallido`.
 ### `hola_ok` / `hola_no`
 
 ```json
-{ "tipo": "hola_ok", "protocolo": 1, "agente": 2 }
+{ "tipo": "hola_ok", "protocolo": 1, "agente": 2, "protocolos": { "DYMO LabelWriter 450": "driver" } }
 { "tipo": "hola_no", "motivo": "protocolo_incompatible", "hub": 1, "minima": 1 }
 ```
 
@@ -88,9 +88,26 @@ hace falta es actualizarlo, y reintentar solo taparía el aviso.
   "impresora": "ZDesigner GK420d",
   "copias": 1,
   "opciones": {},
-  "contenido_b64": "…"
+  "contenido_b64": "…",
+  "protocolo": "driver"
 }
 ```
+
+`protocolo` va solo si la impresora tiene uno fijado (por su modelo o por la
+cola). Con él arma el agente la página de prueba (`formato: "prueba"`): `driver`
+es un PDF por el driver; `zpl`, `epl`, `dp` y `texto`, la prueba cruda en ese
+lenguaje.
+
+### `protocolos`
+
+```json
+{ "tipo": "protocolos", "protocolos": { "DYMO LabelWriter 450": "driver" } }
+```
+
+El protocolo fijado de cada cola del agente; va también en `hola_ok`. Llega
+cada vez que alguien lo cambia en el panel, para que la prueba del panel local
+del agente salga igual que la del hub. Es aditivo: un agente que no lo conoce
+lo ignora, y no cambia el número de protocolo.
 
 ### `cancelar`
 

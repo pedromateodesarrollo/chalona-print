@@ -17,7 +17,7 @@
     <RootNamespace>PrintServer</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <Product>print-server</Product>
     <Company>print-server</Company>
     <Description>print-server: agente de impresión</Description>
@@ -30,12 +30,17 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <!-- El agente compilado para Windows, que va dentro. Lo deja ahí compilar.ps1. -->
     <AgenteExe Condition="'$(AgenteExe)' == ''">$(MSBuildThisFileDirectory)dist/print-server-agente.exe</AgenteExe>
+    <!-- El motor de PDF (PDFium) y sus licencias: el agente imprime PDF por el driver con él. -->
+    <PdfiumDll Condition="'$(PdfiumDll)' == ''">$(MSBuildThisFileDirectory)dist/pdfium.dll</PdfiumDll>
+    <PdfiumLicencias Condition="'$(PdfiumLicencias)' == ''">$(MSBuildThisFileDirectory)dist/pdfium-licencias.txt</PdfiumLicencias>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="src/**/*.cs" />
     <EmbeddedResource Include="icono.ico" LogicalName="icono.ico" />
     <EmbeddedResource Include="$(AgenteExe)" LogicalName="print-server-agente.exe" Condition="Exists('$(AgenteExe)')" />
+    <EmbeddedResource Include="$(PdfiumDll)" LogicalName="pdfium.dll" Condition="Exists('$(PdfiumDll)')" />
+    <EmbeddedResource Include="$(PdfiumLicencias)" LogicalName="pdfium-licencias.txt" Condition="Exists('$(PdfiumLicencias)')" />
   </ItemGroup>
 
   <ItemGroup>
@@ -56,5 +61,9 @@
   -->
   <Target Name="ExigeAgente" BeforeTargets="BeforeBuild" Condition="'$(ExigirAgente)' == 'true' And !Exists('$(AgenteExe)')">
     <Error Text="No encuentro el agente compilado en $(AgenteExe). Compílalo primero (compilar.ps1 lo hace)." />
+  </Target>
+  <!-- Sin PDFium el paquete instala, pero no imprime PDF por el driver: tampoco sale por descuido. -->
+  <Target Name="ExigePdfium" BeforeTargets="BeforeBuild" Condition="'$(ExigirAgente)' == 'true' And !Exists('$(PdfiumDll)')">
+    <Error Text="No encuentro pdfium.dll en $(PdfiumDll). compilar.ps1 lo baja." />
   </Target>
 </Project>

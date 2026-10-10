@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'prueba.dart';
+
 /// Una impresora tal como la ve el sistema operativo de esta computadora.
 class ImpresoraLocal {
   const ImpresoraLocal({
@@ -52,6 +54,9 @@ class ImpresoraLocal {
     'modelo': modelo,
     'conexion': conexion,
     'serie': serie,
+    // El protocolo que el agente deduce solo. El hub lo enseña como
+    // «automático» hasta que alguien fije el del modelo o el de la cola.
+    'protocolo': Prueba.protocolo(this, sistema),
   };
 }
 
@@ -112,4 +117,8 @@ abstract class Driver {
   /// Manda el trabajo al spooler. Vuelve cuando el spooler lo aceptó, que no
   /// es lo mismo que cuando el papel salió: nadie puede prometer eso.
   Future<void> imprime(TrabajoLocal t);
+
+  /// El papel que tiene puesto la cola, en puntos (1/72"), o null si el
+  /// sistema no lo dice. Es la medida de la página de prueba por el driver.
+  Future<(double, double)?> papel(String impresora);
 }

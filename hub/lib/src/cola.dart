@@ -84,6 +84,7 @@ class Despachador {
     final t = await bd.fila(
       '''select t.id, t.agente, t.formato, t.nombre, t.copias, t.opciones,
                 t.contenido, i.sistema, i.nombre as impresora_nombre,
+                print.protocolo(i) as protocolo,
                 a.version as agente_version
            from print.trabajo t
            join print.impresora i on i.id = t.impresora
@@ -125,6 +126,9 @@ class Despachador {
       'copias': t['copias'],
       'opciones': _opciones(t['opciones']),
       'contenido_b64': base64.encode(bytes),
+      // Cómo se le habla a esa impresora, si está fijado. Con él arma el
+      // agente la prueba; un agente de antes de la 0.5.0 lo ignora.
+      if (t['protocolo'] != null) 'protocolo': t['protocolo'],
     });
     if (!salio) return false;
 

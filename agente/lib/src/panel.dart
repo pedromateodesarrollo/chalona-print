@@ -125,17 +125,16 @@ class Panel {
       if (i.sistema == impresora) ficha = i;
     }
     try {
-      await c.driver.imprime(
-        TrabajoLocal(
-          id: -1,
-          impresora: impresora,
-          formato: 'raw',
-          nombre: 'Prueba de print-server',
-          contenido: Prueba.contenido(ficha, impresora),
-        ),
+      final p = await Prueba.imprime(
+        c.driver,
+        ficha,
+        impresora,
+        delHub: c.protocolos[impresora],
+        equipo: c.config.nombre,
       );
-      log.info('panel', 'prueba en ${Prueba.lenguaje(ficha, impresora)} a «$impresora»');
-      await _json(pet, {'ok': true, 'lenguaje': Prueba.lenguaje(ficha, impresora)});
+      log.info('panel', 'prueba por $p a «$impresora»');
+      // `lenguaje` lo lee la ventana de Windows de antes; `protocolo`, la nueva.
+      await _json(pet, {'ok': true, 'lenguaje': p, 'protocolo': p});
     } catch (e) {
       await _json(pet, {'ok': false, 'mensaje': '$e'}, estado: 500);
     }

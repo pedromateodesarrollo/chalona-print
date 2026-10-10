@@ -42,6 +42,8 @@ namespace PrintServer
                 {
                     var d = Json.LeeObjeto(Lee(res));
                     var lenguaje = Json.Texto(d, "lenguaje");
+                    if (lenguaje == "driver")
+                        return (true, $"Mandada a «{impresora}» por su driver (PDF).");
                     return (true, lenguaje.Length > 0
                         ? $"Mandada a «{impresora}» (en {lenguaje.ToUpperInvariant()})."
                         : $"Mandada a «{impresora}».");

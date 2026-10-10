@@ -1,4 +1,5 @@
 import '../driver.dart';
+import 'pdf_driver_windows.dart';
 import 'pdf_windows.dart';
 import 'winspool.dart';
 
@@ -8,23 +9,37 @@ import 'winspool.dart';
 /// impresión RAW —ZPL, EPL, ESC/POS— es exactamente lo que no sobrevive a
 /// pasar por un intermediario que «ayuda» reformateando.
 ///
-/// Lo que Windows **no** trae es un renderizador de PDF para el spooler. Por
-/// eso el PDF y las imágenes van por un ayudante externo opcional; sin él, esta
-/// máquina reporta que solo admite `raw` y `texto`, y el hub rechaza el trabajo
-/// antes de encolarlo en vez de fallar al final.
+/// El PDF va por el driver de la impresora con PDFium (`pdf_driver_windows`),
+/// que viene con el agente: es el camino estándar y el que sirve con cualquier
+/// impresora. Las imágenes siguen yendo por un ayudante externo opcional
+/// (SumatraPDF); sin PDFium ni ayudante, esta máquina reporta que solo admite
+/// `raw` y `texto`, y el hub rechaza el trabajo antes de encolarlo en vez de
+/// fallar al final.
 class DriverWindows implements Driver {
-  DriverWindows() : _pdf = AyudantePdfWindows.detecta();
+  DriverWindows()
+      : _porDriver = PdfPorDriver.detecta(),
+        _pdf = AyudantePdfWindows.detecta();
 
+  final PdfPorDriver? _porDriver;
   final AyudantePdfWindows? _pdf;
 
   @override
-  String get nombre => _pdf == null ? 'windows' : 'windows+${_pdf.nombre}';
+  String get nombre => [
+    'windows',
+    if (_porDriver != null) 'pdfium',
+    if (_pdf != null) _pdf.nombre,
+  ].join('+');
 
   List<String> get _formatos => [
     'raw',
     'texto',
-    if (_pdf != null) ...['pdf', 'imagen'],
+    if (_porDriver != null || _pdf != null) 'pdf',
+    if (_pdf != null) 'imagen',
   ];
+
+  @override
+  Future<(double, double)?> papel(String impresora) async =>
+      _porDriver?.papelActual(impresora);
 
   @override
   Future<List<ImpresoraLocal>> inventario() async {
@@ -59,6 +74,17 @@ class DriverWindows implements Driver {
           datos: t.contenido,
         );
       }
+      return;
+    }
+
+    final porDriver = _porDriver;
+    if (t.formato == 'pdf' && porDriver != null) {
+      porDriver.imprime(
+        impresora: t.impresora,
+        documento: t.nombre.isEmpty ? 'print-server' : t.nombre,
+        pdf: t.contenido,
+        copias: t.copias,
+      );
       return;
     }
 

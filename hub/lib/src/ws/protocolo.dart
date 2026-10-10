@@ -25,6 +25,11 @@ class Protocolo {
   static const holaNo = 'hola_no';
   static const trabajo = 'trabajo';
   static const cancelar = 'cancelar';
+
+  /// `{protocolos: {sistema: protocolo}}`: el protocolo fijado de cada cola
+  /// del agente. Va también en `hola_ok`. Un agente que no lo conoce lo
+  /// ignora: es aditivo y no sube la versión del protocolo.
+  static const protocolos = 'protocolos';
 }
 
 /// Estados por los que pasa un trabajo. El agente solo puede mover un trabajo

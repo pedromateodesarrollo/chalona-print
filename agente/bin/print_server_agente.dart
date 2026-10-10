@@ -45,7 +45,10 @@ Future<void> main(List<String> args) async {
       await _impresoras();
 
     case 'probar':
-      await _probar(opciones['impresora'] ?? '');
+      await _probar(opciones['impresora'] ?? '', opciones['protocolo']);
+
+    case 'imprimir':
+      await _imprimirArchivo(opciones);
 
     case 'instalar':
       await _servicio(
@@ -81,7 +84,10 @@ print-server-agente — imprime en esta computadora lo que le manda el hub.
                        macOS; en Windows lo instala la ventana, print-server.exe)
   desinstalar          Lo quita
   impresoras           Enseña lo que ve del sistema
-  probar               --impresora <nombre>: manda una página de prueba
+  probar               --impresora <nombre> [--protocolo driver|zpl|epl|dp|texto]:
+                       la página de prueba, en el protocolo de esa impresora
+  imprimir             --impresora <nombre> --archivo <ruta> [--formato pdf|raw|…]
+                       [--copias N]: manda un archivo tal cual
   bandeja              Icono junto al reloj (Windows)
   panel                Abre el panel local en el navegador
 
@@ -218,12 +224,14 @@ Future<void> _impresoras() async {
   }
 }
 
-Future<void> _probar(String impresora) async {
+/// La misma página de prueba que mandan el hub y el panel, en el protocolo de
+/// esa impresora (o en el que se pida con `--protocolo`).
+Future<void> _probar(String impresora, String? protocolo) async {
   final config = ConfigAgente.carga();
   final driver = eligeDriver(config);
+  final lista = await driver.inventario();
   var destino = impresora;
   if (destino.isEmpty) {
-    final lista = await driver.inventario();
     final pred = lista.where((i) => i.predeterminada);
     destino = pred.isNotEmpty ? pred.first.sistema : (lista.isEmpty ? '' : lista.first.sistema);
   }
@@ -232,17 +240,49 @@ Future<void> _probar(String impresora) async {
     exitCode = 1;
     return;
   }
+  ImpresoraLocal? ficha;
+  for (final i in lista) {
+    if (i.sistema == destino) ficha = i;
+  }
   try {
-    await driver.imprime(
+    final p = await Prueba.imprime(
+      driver,
+      ficha,
+      destino,
+      delHub: protocolo,
+      equipo: config.nombre,
+    );
+    stdout.writeln('Mandada a «$destino» (por $p).');
+  } catch (e) {
+    stderr.writeln('$e');
+    exitCode = 1;
+  }
+}
+
+/// Un archivo tal cual, sin hub. Es como se prueba el PDF por el driver en la
+/// máquina Windows de la integración continua.
+Future<void> _imprimirArchivo(Map<String, String> o) async {
+  final impresora = o['impresora'] ?? '';
+  final archivo = File(o['archivo'] ?? '');
+  if (impresora.isEmpty || !archivo.existsSync()) {
+    stderr.writeln('Uso: imprimir --impresora <nombre> --archivo <ruta> [--formato pdf]');
+    exitCode = 64;
+    return;
+  }
+  final formato = o['formato'] ??
+      (archivo.path.toLowerCase().endsWith('.pdf') ? 'pdf' : 'raw');
+  try {
+    await eligeDriver(ConfigAgente.carga()).imprime(
       TrabajoLocal(
         id: -1,
-        impresora: destino,
-        formato: 'texto',
-        nombre: 'Prueba de print-server',
-        contenido: utf8.encode('print-server\nPrueba\n${DateTime.now()}\n\n\n'),
+        impresora: impresora,
+        formato: formato,
+        nombre: archivo.uri.pathSegments.last,
+        contenido: archivo.readAsBytesSync(),
+        copias: int.tryParse(o['copias'] ?? '') ?? 1,
       ),
     );
-    stdout.writeln('Mandada a «$destino».');
+    stdout.writeln('Mandado a «$impresora» ($formato).');
   } catch (e) {
     stderr.writeln('$e');
     exitCode = 1;

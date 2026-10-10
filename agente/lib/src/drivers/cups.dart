@@ -183,6 +183,11 @@ class DriverCups implements Driver {
       return null;
     }
   }
+
+  /// CUPS ajusta el PDF a la página él solo (`fit-to-page`): no hace falta
+  /// saber el papel para la prueba.
+  @override
+  Future<(double, double)?> papel(String impresora) async => null;
 }
 
 /// Lo que se saca del URI del dispositivo de CUPS.

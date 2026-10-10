@@ -17,7 +17,7 @@ const int protocoloVersion = 1;
 ///
 /// El hub la mira para no mandarle a un agente viejo algo que no entienda:
 /// desde la 0.2.0 sabe armar el formato `prueba`.
-const String agenteVersion = '0.4.0';
+const String agenteVersion = '0.5.0';
 
 /// El agente: mantiene el WebSocket con el hub e imprime lo que llegue.
 ///
@@ -38,6 +38,11 @@ class Cliente {
 
   /// Último inventario reportado, para el panel local.
   List<ImpresoraLocal> ultimoInventario = const [];
+
+  /// El protocolo que el hub tiene fijado para cada cola (`sistema` → `driver`,
+  /// `zpl`, `epl`…). Llega al conectar y cada vez que alguien lo cambia, para
+  /// que la prueba del panel local salga igual que la del hub.
+  Map<String, String> protocolos = const {};
   DateTime? conectadoDesde;
   String ultimoError = '';
   int impresos = 0;
@@ -126,7 +131,11 @@ class Cliente {
         _fallosSeguidos = 0;
         conectadoDesde = DateTime.now();
         ultimoError = '';
+        _anotaProtocolos(f['protocolos']);
         log.info('cliente', 'conectado al hub como agente ${f['agente']}');
+
+      case 'protocolos':
+        _anotaProtocolos(f['protocolos']);
 
       case 'hola_no':
         // El hub no habla nuestra versión. Reintentar no lo arregla; lo que
@@ -168,14 +177,11 @@ class Cliente {
 
     try {
       final impresora = f['impresora']?.toString() ?? '';
-      var formato = f['formato']?.toString() ?? 'raw';
-      var contenido = Uint8List.fromList(
-        base64.decode(f['contenido_b64']?.toString() ?? ''),
-      );
+      final formato = f['formato']?.toString() ?? 'raw';
 
-      // La prueba la arma el agente, no el hub: aquí es donde se sabe si esta
-      // cola habla EPL, ZPL o texto. Sale como `raw` para que nadie la toque
-      // por el camino.
+      // La prueba la arma el agente, no el hub: aquí es donde se puede hablar
+      // con el driver. Sale en el protocolo que el hub tenga fijado para esta
+      // impresora (`protocolo`), o en el que se deduce si no hay ninguno.
       if (formato == 'prueba') {
         ImpresoraLocal? ficha;
         for (final x in ultimoInventario) {
@@ -184,22 +190,30 @@ class Cliente {
             break;
           }
         }
-        contenido = Prueba.contenido(ficha, impresora);
-        formato = 'raw';
-        log.info('trabajo', '$id: prueba en ${Prueba.lenguaje(ficha, impresora)}');
-      }
-
-      await driver.imprime(
-        TrabajoLocal(
+        final p = await Prueba.imprime(
+          driver,
+          ficha,
+          impresora,
+          delHub: f['protocolo']?.toString(),
+          equipo: config.nombre,
           id: id,
-          impresora: impresora,
-          formato: formato,
-          contenido: contenido,
-          nombre: f['nombre']?.toString() ?? '',
-          copias: (f['copias'] as num?)?.toInt() ?? 1,
-          opciones: (f['opciones'] as Map?)?.cast<String, Object?>() ?? const {},
-        ),
-      );
+        );
+        log.info('trabajo', '$id: prueba por $p');
+      } else {
+        await driver.imprime(
+          TrabajoLocal(
+            id: id,
+            impresora: impresora,
+            formato: formato,
+            contenido: Uint8List.fromList(
+              base64.decode(f['contenido_b64']?.toString() ?? ''),
+            ),
+            nombre: f['nombre']?.toString() ?? '',
+            copias: (f['copias'] as num?)?.toInt() ?? 1,
+            opciones: (f['opciones'] as Map?)?.cast<String, Object?>() ?? const {},
+          ),
+        );
+      }
       // Se anota ANTES del ack: si el proceso muere entre una cosa y otra, el
       // hub reenviará y el registro dirá que ya salió. Al revés se imprimiría
       // dos veces.
@@ -218,6 +232,14 @@ class Cliente {
       }));
       log.error('trabajo', '$id falló: $e');
     }
+  }
+
+  void _anotaProtocolos(Object? m) {
+    if (m is! Map) return;
+    protocolos = {
+      for (final e in m.entries)
+        if (e.value != null) e.key.toString(): e.value.toString(),
+    };
   }
 
   Future<List<ImpresoraLocal>> _inventario() async {

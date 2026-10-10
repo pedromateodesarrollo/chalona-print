@@ -350,4 +350,88 @@ void main() {
       await smtp.cierra();
     }
   });
+
+  test('protocolo: se fija por modelo o por cola, le llega al agente y viaja en la prueba', () async {
+    // Una llave para dar de alta el agente, como hace el instalador.
+    final (stL, llave) = await pide('POST', '/v1/llaves',
+        json: {'nombre': 'agentes', 'permisos': ['agentes:registrar', 'trabajos:escribir', 'impresoras:leer']},
+        token: admin);
+    expect(stL, 201, reason: '$llave');
+    final (stR, reg) = await pide('POST', '/v1/agentes/registrar',
+        json: {'huella': 'protocolo-1', 'nombre': 'producion-cgm', 'version': '0.5.0'},
+        token: llave['llave'] as String);
+    expect(stR, anyOf(200, 201), reason: '$reg');
+
+    final ws = await WebSocket.connect('ws://127.0.0.1:${hub.puerto}/agente/ws',
+        headers: {'authorization': 'Bearer ${reg['credencial']}'});
+    final llegados = <Map<String, dynamic>>[];
+    ws.listen((m) => llegados.add(Map<String, dynamic>.from(jsonDecode(m as String) as Map)));
+    Future<Map<String, dynamic>> espera(String tipo) async {
+      for (var i = 0; i < 100; i++) {
+        final k = llegados.indexWhere((f) => f['tipo'] == tipo);
+        if (k >= 0) return llegados.removeAt(k);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      fail('no llegó «$tipo» al agente');
+    }
+
+    const dymo = 'DYMO LabelWriter 450';
+    ws.add(jsonEncode({
+      'tipo': 'hola',
+      'protocolo': 1,
+      'version': '0.5.0',
+      'impresoras': [
+        {
+          'sistema': dymo, 'nombre': dymo, 'estado': 'lista', 'modelo': dymo,
+          'formatos': ['raw', 'texto', 'pdf'], 'protocolo': 'driver',
+        },
+      ],
+    }));
+    final hola = await espera('hola_ok');
+    expect(hola['protocolos'], isEmpty, reason: 'nada fijado todavía');
+
+    Future<Map<String, dynamic>> laDymo() async {
+      final (st, d) = await pide('GET', '/v1/impresoras', token: admin);
+      expect(st, 200);
+      return Map<String, dynamic>.from(
+          (d['impresoras'] as List).cast<Map>().firstWhere((i) => i['sistema'] == dymo));
+    }
+
+    var i = await laDymo();
+    expect(i['protocolo_auto'], 'driver');
+    expect(i['protocolo_efectivo'], 'driver', reason: 'sin fijar manda lo que deduce el agente');
+    final id = i['id'] as int;
+
+    // La primera vez que se ve el modelo se fija para todas las de ese modelo.
+    var (st, d) = await pide('PATCH', '/v1/impresoras/$id', json: {'protocolo_modelo': 'driver'}, token: admin);
+    expect(st, 200, reason: '$d');
+    expect((await espera('protocolos'))['protocolos'], {dymo: 'driver'});
+    i = await laDymo();
+    expect(i['protocolo_modelo'], 'driver');
+
+    // Una cola se puede salir de su modelo, y eso manda.
+    (st, d) = await pide('PATCH', '/v1/impresoras/$id', json: {'protocolo': 'epl'}, token: admin);
+    expect(st, 200, reason: '$d');
+    expect((await espera('protocolos'))['protocolos'], {dymo: 'epl'});
+    expect((await laDymo())['protocolo_efectivo'], 'epl');
+
+    // La prueba del hub viaja con el protocolo fijado: con él la arma el agente.
+    (st, d) = await pide('POST', '/v1/trabajos', json: {'impresora': id, 'formato': 'prueba'}, token: admin);
+    expect(st, anyOf(200, 201, 202), reason: '$d');
+    final trabajo = await espera('trabajo');
+    expect(trabajo['formato'], 'prueba');
+    expect(trabajo['protocolo'], 'epl');
+
+    // Quitarlos vuelve a lo de debajo, y un valor que no existe se rechaza.
+    (st, d) = await pide('PATCH', '/v1/impresoras/$id', json: {'protocolo': 'braille'}, token: admin);
+    expect(st, 400);
+    expect(d['error'], 'protocolo_invalido');
+    (st, d) = await pide('PATCH', '/v1/impresoras/$id',
+        json: {'protocolo': null, 'protocolo_modelo': null}, token: admin);
+    expect(st, 200, reason: '$d');
+    expect((await espera('protocolos'))['protocolos'], isEmpty);
+    expect((await laDymo())['protocolo_efectivo'], 'driver');
+
+    await ws.close();
+  });
 }

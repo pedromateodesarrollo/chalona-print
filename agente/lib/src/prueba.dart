@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'driver.dart';
+import 'pdf_prueba.dart';
 
 /// Arma la página de prueba que entiende cada impresora.
 ///
@@ -80,15 +81,88 @@ class Prueba {
     return 'texto';
   }
 
-  /// El contenido de la prueba, ya en bytes listos para el spooler.
-  static Uint8List contenido(ImpresoraLocal? i, String nombreCola) {
+  /// Los protocolos con que se le puede hablar a una impresora.
+  ///
+  /// `driver` es el ESTÁNDAR: PDF por el driver de la impresora, lo mismo que
+  /// la página de prueba de Windows. Sirve con cualquier impresora que tenga
+  /// driver —una DYMO no entiende ZPL, ni EPL, ni texto— sin saber qué
+  /// lenguaje habla. Los demás son el lenguaje crudo de una etiquetadora:
+  /// más rápidos y exactos, pero solo para la que lo habla.
+  static const protocolos = {'driver', 'zpl', 'epl', 'dp', 'texto'};
+
+  /// Cómo se le habla a esta impresora.
+  ///
+  /// Manda lo que diga el hub (`delHub`): ahí queda fijado el protocolo de cada
+  /// modelo la primera vez que se ve, y el de una cola concreta cuando se sale
+  /// de su modelo (Pedro, 2026-10-10). Sin eso, las etiquetadoras que se
+  /// reconocen por el nombre siguen en su lenguaje —es lo que ya trabaja— y
+  /// todo lo demás va por el driver, si esta máquina puede imprimir PDF. El
+  /// texto crudo queda solo para donde no se puede.
+  static String protocolo(ImpresoraLocal? i, String nombreCola, {String? delHub}) {
+    final fijado = delHub?.trim().toLowerCase() ?? '';
+    if (protocolos.contains(fijado)) return fijado;
+    final l = lenguaje(i, nombreCola);
+    if (l != 'texto') return l;
+    return (i?.formatos.contains('pdf') ?? false) ? 'driver' : 'texto';
+  }
+
+  /// Imprime la página de prueba en el protocolo que toca y dice cuál fue.
+  ///
+  /// Por el driver es un PDF del tamaño del papel que tiene puesta la cola, para
+  /// que salga entera; si el driver no lo dice, carta. Lo usan el hub (formato
+  /// `prueba`), el panel y la consola: las tres pruebas son la misma.
+  static Future<String> imprime(
+    Driver d,
+    ImpresoraLocal? i,
+    String impresora, {
+    String? delHub,
+    String equipo = '',
+    int id = -1,
+  }) async {
+    final p = protocolo(i, impresora, delHub: delHub);
+    if (p == 'driver') {
+      final papel = await d.papel(impresora) ?? (612.0, 792.0);
+      await d.imprime(
+        TrabajoLocal(
+          id: id,
+          impresora: impresora,
+          formato: 'pdf',
+          nombre: 'Prueba de print-server',
+          contenido: pdfDePrueba(
+            ancho: papel.$1,
+            alto: papel.$2,
+            impresora: i?.nombre ?? impresora,
+            equipo: equipo,
+          ),
+        ),
+      );
+      return p;
+    }
+    await d.imprime(
+      TrabajoLocal(
+        id: id,
+        impresora: impresora,
+        formato: 'raw',
+        nombre: 'Prueba de print-server',
+        contenido: crudo(p, i, impresora),
+      ),
+    );
+    return p;
+  }
+
+  /// El contenido de la prueba en el lenguaje que se deduce del nombre.
+  static Uint8List contenido(ImpresoraLocal? i, String nombreCola) =>
+      crudo(lenguaje(i, nombreCola), i, nombreCola);
+
+  /// La prueba en un lenguaje crudo, ya en bytes listos para el spooler.
+  static Uint8List crudo(String lenguaje, ImpresoraLocal? i, String nombreCola) {
     final ahora = DateTime.now();
     final fecha =
         '${_dd(ahora.day)}/${_dd(ahora.month)}/${ahora.year}  '
         '${_dd(ahora.hour)}:${_dd(ahora.minute)}';
     final nombre = _latin1(_recorta(i?.nombre ?? nombreCola, 30));
 
-    switch (lenguaje(i, nombreCola)) {
+    switch (lenguaje) {
       case 'epl':
         // Todo por encima del dot 300: hay etiquetadoras con desplazamientos
         // de origen que recortan el final, y una prueba que se sale de la
