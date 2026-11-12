@@ -5,6 +5,25 @@ protocolo del WebSocket va aparte y se documenta en `docs/protocolo-ws.md`.
 
 ## Sin publicar
 
+### Agente 0.6.0: Windows en C#, también de 32 bits
+
+* **El agente de Windows es C#** (`agente/windows/src/agente/`), dentro del
+  mismo .exe de la ventana y el servicio: .NET Framework 4.8, que ya viene con
+  Windows 10 y 11. Dart no compila para Windows de 32 bits (dejó ia32 en la 3.8
+  y nunca tuvo AOT ahí); una estación de etiquetas de 32 bits no podía abrir el
+  paquete.
+* Paridad con el agente Dart 0.5.0: mismo protocolo del WebSocket, mismo alta
+  por huella, mismo `agente.json` y `hechos.txt` (instalar encima de un Dart
+  conserva la conexión), mismos estados de impresora, la misma página de prueba
+  por lenguaje y por el driver, PDF por PDFium con el papel que mide como la
+  página, el mismo panel local y las mismas órdenes de consola.
+* **Dos paquetes**: `print-server-agente-windows-x86.exe` (32 bits; corre
+  también en 64) y `print-server-agente-windows-x64.exe`, cada uno con su
+  PDFium. Se compilan en Linux (`agente/windows/compilar.sh`); `instalar.ps1`
+  elige el de la arquitectura de la máquina. El hub acepta publicar el x86.
+* Los trabajos se imprimen en un hilo aparte del que lee el socket: un PDF
+  largo no deja al hub sin respuesta a su ping.
+
 ### Impresión estándar por el driver
 
 * **El protocolo de cada impresora** (migración 0007): `driver` —PDF por su

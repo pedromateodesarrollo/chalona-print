@@ -1,12 +1,8 @@
 # Compila los ejecutables del agente para los tres sistemas.
 #
-# El de Windows tiene que salir de aquí: `dart compile exe` genera para el
-# sistema donde corre, no cruza. Sin esta pieza haría falta una máquina Windows
-# a mano cada vez que se publica una versión.
-#
-# En Windows lo que se publica no es el agente solo sino el paquete con la
-# ventana (agente/windows): un .exe que al abrirlo conecta, se instala como
-# servicio y enseña cómo va.
+# En Windows el agente es C# (agente/windows): un .exe con el agente, la
+# ventana y el servicio, que al abrirlo conecta, se instala como servicio y
+# enseña cómo va. Sale uno para x86 (Windows de 32 bits) y otro para x64.
 
 name: binarios del agente
 
@@ -39,18 +35,18 @@ jobs:
           path: agente/${{ matrix.salida }}
 
   windows:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '10.0.x' }
-      - shell: pwsh
-        run: agente/windows/compilar.ps1
+      - run: agente/windows/compilar.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: print-server-agente-windows-x64
-          path: agente/windows/dist/print-server-agente-windows-x64.exe
+          name: print-server-agente-windows
+          path: |
+            agente/windows/dist/print-server-agente-windows-x86.exe
+            agente/windows/dist/print-server-agente-windows-x64.exe
 
   hub:
     runs-on: ubuntu-latest

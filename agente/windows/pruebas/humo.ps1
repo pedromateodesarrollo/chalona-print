@@ -1,6 +1,9 @@
 # Prueba de punta a punta del paquete de Windows, en una máquina de verdad.
 #
-#   pwsh agente/windows/pruebas/humo.ps1 -Paquete dist/print-server-agente-windows-x64.exe
+#   pwsh agente/windows/pruebas/humo.ps1 -Paquete dist/print-server-agente-windows-x86.exe
+#
+# Vale para los dos paquetes (x86 y x64): el de 32 bits se prueba igual en una
+# Windows de 64, corriendo como proceso de 32 bits.
 #
 # INSTALA Y DESINSTALA print-server en la máquina donde corre, y escribe en
 # ProgramData y en Archivos de programa. Es para la máquina desechable de la
@@ -69,7 +72,7 @@ function MuestraRegistro {
 }
 
 # La ventana se lanza desde una copia con el nombre con que se descarga.
-$script:exe = Join-Path $env:TEMP 'print-server-agente-windows-x64.exe'
+$script:exe = Join-Path $env:TEMP (Split-Path $Paquete -Leaf)
 Copy-Item $Paquete $script:exe -Force
 
 # ---------------------------------------------------------------------------
@@ -122,7 +125,9 @@ if (-not $e) { MuestraRegistro }
 Comprueba ($null -ne $e) 'el panel del agente contesta'
 if ($e) {
   Comprueba ($e.modo -eq 'servicio') "dice que corre como servicio ($($e.modo))"
-  Comprueba ($e.version -eq '0.5.0') "versión del agente ($($e.version))"
+  Comprueba ($e.version -eq '0.6.0') "versión del agente ($($e.version))"
+  $arq = if ($Paquete -match 'x86') { 'x86' } else { 'x64' }
+  Comprueba ($e.arquitectura -eq $arq) "corre como proceso $arq ($($e.arquitectura))"
   Comprueba ($e.agente -eq 99) 'conserva el número de agente de la conexión vieja'
   # Las mira al arrancar, aunque el hub no conteste.
   for ($i = 0; $i -lt 10 -and @($e.impresoras).Count -eq 0; $i++) { Start-Sleep -Seconds 1; $e = Estado }

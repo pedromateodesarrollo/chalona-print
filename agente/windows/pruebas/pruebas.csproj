@@ -11,9 +11,12 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- El agente llama al registro y al spooler de Windows; aquí solo se prueba lo que no los toca. -->
+    <NoWarn>$(NoWarn);CA1416;SYSLIB0014</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Pruebas.cs" />
-    <Compile Include="../src/Json.cs;../src/Modelo.cs;../src/Argumentos.cs;../src/Situacion.cs" />
+    <Compile Include="Pruebas.cs;PruebasAgente.cs" />
+    <Compile Include="../src/Json.cs;../src/Modelo.cs;../src/Argumentos.cs;../src/Situacion.cs;../src/Rutas.cs" />
+    <Compile Include="../src/agente/*.cs" />
   </ItemGroup>
 </Project>

@@ -9,11 +9,13 @@ using System.Windows.Forms;
 namespace PrintServer
 {
     /// <summary>
-    /// print-server para Windows: la ventana, el icono de la bandeja y el
-    /// servicio son el mismo .exe, con el agente (Dart) metido dentro.
+    /// print-server para Windows: la ventana, el icono de la bandeja, el
+    /// servicio y el agente son el mismo .exe, todo en C#.
     ///
     /// <code>
     ///   print-server.exe                     la ventana
+    ///   print-server.exe correr|configurar|impresoras|probar|imprimir
+    ///                                        el agente (ver <see cref="Agente.OrdenesAgente"/>)
     ///   print-server.exe --bandeja           el icono junto al reloj
     ///   print-server.exe --servicio          lo que arranca Windows (no a mano)
     ///
@@ -30,6 +32,7 @@ namespace PrintServer
         [STAThread]
         static int Main(string[] args)
         {
+            if (Agente.OrdenesAgente.Es(args)) return Agente.OrdenesAgente.Corre(args);
             var a = Argumentos.Lee(args);
             switch (a.Orden)
             {

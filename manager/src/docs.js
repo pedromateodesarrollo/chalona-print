@@ -526,8 +526,8 @@ export const puntos = [
       'la carpeta se sirve sin credencial, y admitir un nombre cualquiera sería ' +
       'admitir escritura en ella. Y solo publica la organización que levantó el ' +
       'hub (`PRINT_ORG_PUBLICADORA`, por defecto 1): las descargas son del hub ' +
-      'entero, no de una organización. Lo usan `agente/publicar.ps1` y ' +
-      '`agente/publicar.sh`; **compara el sha256 que devuelve** con el del ' +
+      'entero, no de una organización. Lo usa `agente/publicar.sh` (con ' +
+      '`--windows x86|x64` para los de Windows); **compara el sha256 que devuelve** con el del ' +
       'archivo local antes de darlo por publicado.',
     respuesta: `{ "archivo": "…", "url": "/descargas/…", "bytes": 7617144, "sha256": "…" }`,
     ejemplo: `curl -X POST https://TU-HUB/v1/descargas/print-server-agente-linux-x64 \\

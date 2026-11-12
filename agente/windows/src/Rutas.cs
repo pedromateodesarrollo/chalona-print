@@ -12,7 +12,7 @@ namespace PrintServer
 
         /// <summary>
         /// La versión de este programa, que es la del paquete: la ventana y el
-        /// agente que lleva dentro salen juntos.
+        /// agente salen juntos (son el mismo .exe).
         /// </summary>
         public static string Version =>
             Versiones.Corta(Assembly.GetExecutingAssembly().GetName().Version.ToString());
@@ -25,11 +25,16 @@ namespace PrintServer
 
         public static string Ventana => Path.Combine(Programa, "print-server.exe");
 
+        /// <summary>
+        /// Una copia de este mismo .exe con otro nombre: el servicio lo arranca como
+        /// proceso aparte (<c>print-server-agente.exe correr</c>), que se reconoce en
+        /// el Administrador de tareas y se puede matar sin tumbar al servicio.
+        /// </summary>
         public static string Agente => Path.Combine(Programa, "print-server-agente.exe");
 
         /// <summary>
         /// La carpeta del agente: <c>ProgramData\print-server</c>, la misma que
-        /// usa <c>ConfigAgente.rutaPorDefecto()</c> en Dart.
+        /// usaba el agente de Dart (<c>ConfigAgente.rutaPorDefecto()</c>).
         /// </summary>
         public static string Datos => Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "print-server");

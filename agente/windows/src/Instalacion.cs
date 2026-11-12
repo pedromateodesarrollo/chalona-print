@@ -145,35 +145,27 @@ namespace PrintServer
             Directory.CreateDirectory(Rutas.Programa);
             Directory.CreateDirectory(Rutas.Datos);
 
-            // El agente sale primero a una carpeta temporal y, si hay datos, se
-            // conecta desde ahí. Así una llave mala no toca nada: el servicio que
-            // ya estuviera imprimiendo sigue imprimiendo.
-            var agenteNuevo = Path.Combine(Path.GetTempPath(), $"print-server-agente-{Guid.NewGuid():N}.exe");
+            // Primero se conecta, con lo que hubiera instalado todavía en marcha:
+            // así una llave mala no toca nada y el servicio que ya estuviera
+            // imprimiendo sigue imprimiendo.
             string conectado = null;
-            try
-            {
-                ExtraeAgente(agenteNuevo);
-                if (datos != null) conectado = Conecta(agenteNuevo, datos, registro);
+            if (datos != null) conectado = Conecta(datos, registro);
 
-                // Ahora sí: se para todo lo que pueda tener los archivos abiertos o
-                // estar conectado al hub con la misma credencial.
-                DetieneServicio(Rutas.Servicio);
-                RetiraLoViejo(registro);
-                CierraProcesos(padre);
+            // Ahora sí: se para todo lo que pueda tener los archivos abiertos o
+            // estar conectado al hub con la misma credencial.
+            DetieneServicio(Rutas.Servicio);
+            RetiraLoViejo(registro);
+            CierraProcesos(padre);
 
-                var yo = Rutas.EsteEjecutable;
-                if (!Rutas.EsLaMisma(yo, Rutas.Ventana)) CopiaConReintentos(yo, Rutas.Ventana);
-                CopiaConReintentos(agenteNuevo, Rutas.Agente);
-                // PDFium va junto al agente: Windows busca la DLL primero en la
-                // carpeta del .exe, y ahí la busca el agente. Con ella imprime
-                // PDF por el driver de cualquier impresora.
-                ExtraeJunto("pdfium.dll", registro);
-                ExtraeJunto("pdfium-licencias.txt", registro);
-            }
-            finally
-            {
-                try { File.Delete(agenteNuevo); } catch (Exception) { }
-            }
+            var yo = Rutas.EsteEjecutable;
+            if (!Rutas.EsLaMisma(yo, Rutas.Ventana)) CopiaConReintentos(yo, Rutas.Ventana);
+            // El agente es este mismo programa con otro nombre (ver Rutas.Agente).
+            // Encima del agente de Dart de las versiones anteriores: lo reemplaza.
+            CopiaConReintentos(yo, Rutas.Agente);
+            // PDFium va junto al agente, de la misma arquitectura que este paquete:
+            // con ella imprime PDF por el driver de cualquier impresora.
+            ExtraeJunto("pdfium.dll", registro);
+            ExtraeJunto("pdfium-licencias.txt", registro);
             TraeConfigVieja(registro);
             ProtegeConfig();
 
@@ -272,43 +264,25 @@ namespace PrintServer
                 throw new InvalidOperationException("La llave de API empieza por «cpk_»: revisa lo que pegaste.");
         }
 
-        /// <summary>El alta la hace el agente, que es quien sabe hablar con el hub.</summary>
-        static string Conecta(string agente, DatosConexion d, RegistroArchivo registro)
+        /// <summary>
+        /// El alta en el hub (<c>POST /v1/agentes/registrar</c>), con la huella que
+        /// ya tuviera esta computadora: reinstalar no duplica el agente.
+        /// </summary>
+        static string Conecta(DatosConexion d, RegistroArchivo registro)
         {
-            var args = new List<string> { "configurar", "--hub", d.Hub.Trim(), "--llave", d.Llave.Trim() };
-            if (d.Nombre.Trim().Length > 0) args.AddRange(new[] { "--nombre", d.Nombre.Trim() });
-            var psi = new ProcessStartInfo(agente, Argumentos.Une(args))
+            var c = Agente.ConfigLocal.Carga(Rutas.Config);
+            try
             {
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                StandardOutputEncoding = Encoding.UTF8,
-                StandardErrorEncoding = Encoding.UTF8,
-                WorkingDirectory = Path.GetDirectoryName(agente),
-            };
-            psi.EnvironmentVariables["PRINT_AGENTE_UTF8"] = "1";
-            using (var p = Process.Start(psi))
-            {
-                var salida = p.StandardOutput.ReadToEndAsync();
-                var error = p.StandardError.ReadToEndAsync();
-                if (!p.WaitForExit(60000))
-                {
-                    try { p.Kill(); } catch (Exception) { }
-                    throw new InvalidOperationException("El hub no contestó en un minuto: revisa la dirección y la conexión.");
-                }
-                var texto = (error.Result.Trim().Length > 0 ? error.Result : salida.Result).Trim();
-                if (p.ExitCode != 0)
-                {
-                    registro.Escribe("instalar", "no se pudo conectar: " + texto);
-                    throw new InvalidOperationException("No se pudo conectar: " + texto);
-                }
+                Agente.Alta.Registra(c, d.Hub, d.Llave, d.Nombre, Rutas.Config);
             }
-            var c = ConfigAgente.Lee(Rutas.Config);
-            registro.Escribe("instalar", $"conectada como agente {c?.Agente} en {c?.Hub}");
-            return c != null && c.Agente > 0
-                ? $"Conectada al hub como agente {c.Agente} · {c.Nombre}."
-                : "Conectada al hub.";
+            catch (Exception e)
+            {
+                var texto = Agente.Alta.Mensaje(e);
+                registro.Escribe("instalar", "no se pudo conectar: " + texto);
+                throw new InvalidOperationException("No se pudo conectar: " + texto);
+            }
+            registro.Escribe("instalar", $"conectada como agente {c.Agente} en {c.Hub}");
+            return $"Conectada al hub como agente {c.Agente} · {c.Nombre}.";
         }
 
         /// <summary>
@@ -426,18 +400,6 @@ namespace PrintServer
             finally
             {
                 try { File.Delete(temporal); } catch (Exception) { }
-            }
-        }
-
-        static void ExtraeAgente(string destino)
-        {
-            using (var r = Assembly.GetExecutingAssembly().GetManifestResourceStream("print-server-agente.exe"))
-            {
-                if (r == null)
-                    throw new InvalidOperationException(
-                        "Este programa se compiló sin el agente dentro y no puede instalarse. " +
-                        "Descarga el de Windows desde el hub.");
-                using (var f = File.Create(destino)) r.CopyTo(f);
             }
         }
 

@@ -12,10 +12,10 @@ namespace PrintServer
     /// <summary>
     /// El servicio de Windows: arranca el agente y lo vuelve a levantar si se cae.
     ///
-    /// El agente (Dart) no puede ser un servicio él mismo: el Administrador de
-    /// servicios llama desde otro hilo y espera respuesta, y Dart corre en uno
-    /// solo. Por eso el servicio es esto, en C#, y el agente corre como un
-    /// proceso hijo normal. Arranca con Windows sin que nadie inicie sesión.
+    /// El agente corre como proceso hijo (<c>print-server-agente.exe correr</c>,
+    /// el mismo programa): si se cuelga o se cae, el servicio lo vuelve a
+    /// levantar sin que Windows tenga que reiniciar el servicio. Arranca con
+    /// Windows sin que nadie inicie sesión.
     ///
     /// El agente va dentro de un «job» de Windows que muere con el servicio: si
     /// el servicio se cae o lo matan, no queda un agente huérfano conectado al

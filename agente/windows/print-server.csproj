@@ -1,23 +1,28 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
-    print-server para Windows: la ventana, el icono de la bandeja y el servicio
-    que mantiene vivo al agente. Un solo .exe con el agente (Dart) dentro.
+    print-server para Windows: el agente, la ventana, el icono de la bandeja y
+    el servicio que lo mantiene vivo. Un solo .exe, todo en C#.
 
     .NET Framework 4.8 porque viene con Windows 10 y 11: el .exe corre sin
-    instalar nada más y pesa lo que el agente. Compila también en Linux.
+    instalar nada más. Compila en Linux (no hace falta Windows para el paquete).
 
+    Sale uno por arquitectura, cada uno con su PDFium dentro: x86 (Windows de
+    32 bits; también corre en los de 64) y x64.
+
+      ./compilar.sh                                 los dos paquetes, con PDFium
       dotnet build -c Release                       solo para comprobar que compila
-      pwsh compilar.ps1                             el paquete de verdad (en Windows)
   -->
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net48</TargetFramework>
-    <PlatformTarget>x64</PlatformTarget>
+    <Arquitectura Condition="'$(Arquitectura)' == ''">x64</Arquitectura>
+    <PlatformTarget>$(Arquitectura)</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
     <AssemblyName>print-server</AssemblyName>
     <RootNamespace>PrintServer</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
-    <Version>0.5.0</Version>
+    <Version>0.6.0</Version>
     <Product>print-server</Product>
     <Company>print-server</Company>
     <Description>print-server: agente de impresión</Description>
@@ -28,17 +33,14 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <!-- El agente compilado para Windows, que va dentro. Lo deja ahí compilar.ps1. -->
-    <AgenteExe Condition="'$(AgenteExe)' == ''">$(MSBuildThisFileDirectory)dist/print-server-agente.exe</AgenteExe>
-    <!-- El motor de PDF (PDFium) y sus licencias: el agente imprime PDF por el driver con él. -->
-    <PdfiumDll Condition="'$(PdfiumDll)' == ''">$(MSBuildThisFileDirectory)dist/pdfium.dll</PdfiumDll>
+    <!-- El motor de PDF (PDFium) de esta arquitectura y sus licencias: el agente imprime PDF por el driver con él. -->
+    <PdfiumDll Condition="'$(PdfiumDll)' == ''">$(MSBuildThisFileDirectory)dist/pdfium-$(Arquitectura)/pdfium.dll</PdfiumDll>
     <PdfiumLicencias Condition="'$(PdfiumLicencias)' == ''">$(MSBuildThisFileDirectory)dist/pdfium-licencias.txt</PdfiumLicencias>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="src/**/*.cs" />
     <EmbeddedResource Include="icono.ico" LogicalName="icono.ico" />
-    <EmbeddedResource Include="$(AgenteExe)" LogicalName="print-server-agente.exe" Condition="Exists('$(AgenteExe)')" />
     <EmbeddedResource Include="$(PdfiumDll)" LogicalName="pdfium.dll" Condition="Exists('$(PdfiumDll)')" />
     <EmbeddedResource Include="$(PdfiumLicencias)" LogicalName="pdfium-licencias.txt" Condition="Exists('$(PdfiumLicencias)')" />
   </ItemGroup>
@@ -55,15 +57,10 @@
   </ItemGroup>
 
   <!--
-    Un paquete sin el agente dentro compila y se abre, pero no puede instalar
-    nada. Para publicar, compilar.ps1 pasa ExigirAgente=true y así no sale uno
-    por descuido.
+    Sin PDFium el paquete instala, pero no imprime PDF por el driver: para
+    publicar, compilar.sh pasa ExigirPdfium=true y así no sale uno por descuido.
   -->
-  <Target Name="ExigeAgente" BeforeTargets="BeforeBuild" Condition="'$(ExigirAgente)' == 'true' And !Exists('$(AgenteExe)')">
-    <Error Text="No encuentro el agente compilado en $(AgenteExe). Compílalo primero (compilar.ps1 lo hace)." />
-  </Target>
-  <!-- Sin PDFium el paquete instala, pero no imprime PDF por el driver: tampoco sale por descuido. -->
-  <Target Name="ExigePdfium" BeforeTargets="BeforeBuild" Condition="'$(ExigirAgente)' == 'true' And !Exists('$(PdfiumDll)')">
-    <Error Text="No encuentro pdfium.dll en $(PdfiumDll). compilar.ps1 lo baja." />
+  <Target Name="ExigePdfium" BeforeTargets="BeforeBuild" Condition="'$(ExigirPdfium)' == 'true' And !Exists('$(PdfiumDll)')">
+    <Error Text="No encuentro pdfium.dll en $(PdfiumDll). compilar.sh lo baja." />
   </Target>
 </Project>

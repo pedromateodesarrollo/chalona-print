@@ -13,6 +13,8 @@ import 'servidor.dart';
 /// justo lo que hace publicar una versión nueva.
 const _publicables = {
   'print-server-agente-windows-x64.exe',
+  // Windows de 32 bits (el mismo agente en C#, compilado para x86).
+  'print-server-agente-windows-x86.exe',
   'print-server-agente-linux-x64',
   'print-server-agente-macos-arm64',
   'print-server-agente-macos-x64',
@@ -112,7 +114,7 @@ Future<List<Map<String, Object?>>> _listado(String carpeta) async {
   return salida;
 }
 
-/// Sube un ejecutable. Lo usan `agente/publicar.ps1` y `agente/publicar.sh`.
+/// Sube un ejecutable. Lo usa `agente/publicar.sh` (también los de Windows).
 void registraSubidaDescargas(Servidor s) {
   s.ruta('POST', '/v1/descargas/:archivo', (p) async {
     final nombre = p.params['archivo'] ?? '';

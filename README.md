@@ -125,13 +125,14 @@ cd agente
 ./publicar.sh --hub https://tu-hub --llave cpk_llave_admin      # Linux y macOS
 ```
 
-```powershell
+```bash
 cd agente
-.\publicar.ps1 -Hub https://tu-hub -Llave cpk_llave_admin       # Windows
+./publicar.sh --windows x86 --hub https://tu-hub --llave cpk_llave_admin   # Windows de 32 bits
+./publicar.sh --windows x64 --hub https://tu-hub --llave cpk_llave_admin   # Windows de 64 bits
 ```
 
-Windows necesita su propia máquina: `dart compile exe` genera para el sistema
-donde corre y no cruza. Por eso hay dos scripts y no uno.
+El agente de Windows es C# (`agente/windows`) y se compila desde Linux; el de
+Linux y macOS, Dart, en su propio sistema (`dart compile exe` no cruza).
 
 Publicar está reservado a la organización que levantó el hub
 (`PRINT_ORG_PUBLICADORA`, por defecto la 1) y solo acepta los nombres conocidos

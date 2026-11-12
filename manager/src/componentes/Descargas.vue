@@ -121,12 +121,13 @@ onMounted(async () => {
           El ejecutable de Windows todavía no está publicado en este hub.
         </p>
         <p class="apagado">
-          Tiene que compilarse en una máquina Windows: Dart genera para el
-          sistema donde corre y no cruza. En esa máquina, con el SDK de Dart y
-          el repositorio, un solo comando compila y lo deja publicado aquí:
+          Es C# y se compila en cualquier sistema con el SDK de .NET (también
+          Linux). Con el repositorio, un comando compila y lo deja publicado
+          aquí (x86 para Windows de 32 bits, x64 para las de 64):
         </p>
         <pre>cd agente
-.\publicar.ps1 -Hub {{ hub }} -Llave cpk_llave_admin</pre>
+./publicar.sh --windows x86 --hub {{ hub }} --llave cpk_llave_admin
+./publicar.sh --windows x64 --hub {{ hub }} --llave cpk_llave_admin</pre>
         <p class="apagado" style="font-size: 13px">
           La llave tiene que ser de administrador. En cuanto termine, aparece en
           esta página sin tocar nada más.

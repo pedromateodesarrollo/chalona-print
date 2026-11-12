@@ -17,6 +17,7 @@ namespace PrintServer
             Argumentos_();
             Arranque_();
             Cabecera_();
+            PruebasAgente.Todas(Igual<object>, Cierto);
             Console.WriteLine($"\n{_bien} bien, {_mal} mal");
             return _mal == 0 ? 0 : 1;
         }
