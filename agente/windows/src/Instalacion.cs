@@ -102,7 +102,8 @@ namespace PrintServer
             try
             {
                 var nombres = new HashSet<string>(ServiciosViejos, StringComparer.OrdinalIgnoreCase);
-                using (var raiz = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services"))
+                using (var hklm = Rutas.Hklm())
+                using (var raiz = hklm.OpenSubKey(@"SYSTEM\CurrentControlSet\Services"))
                 {
                     if (raiz == null) return viejos;
                     foreach (var nombre in raiz.GetSubKeyNames())
@@ -335,7 +336,8 @@ namespace PrintServer
                 if (Corre("schtasks.exe", "/delete", "/tn", t, "/f").codigo == 0)
                     registro.Escribe("instalar", $"quitada la tarea vieja «{t}»");
             }
-            using (var clave = Registry.LocalMachine.OpenSubKey(ClaveArranque, true))
+            using (var hklm = Rutas.Hklm())
+            using (var clave = hklm.OpenSubKey(ClaveArranque, true))
             {
                 if (clave == null) return;
                 foreach (var v in clave.GetValueNames().Where(n => n.StartsWith("chalona-print", StringComparison.OrdinalIgnoreCase)))
@@ -480,13 +482,15 @@ namespace PrintServer
         /// <summary>El icono de la bandeja, para todo el que inicie sesión.</summary>
         static void PonArranque()
         {
-            using (var clave = Registry.LocalMachine.CreateSubKey(ClaveArranque))
+            using (var hklm = Rutas.Hklm())
+            using (var clave = hklm.CreateSubKey(ClaveArranque))
                 clave.SetValue("print-server", $"\"{Rutas.Ventana}\" --bandeja");
         }
 
         static void QuitaArranque()
         {
-            using (var clave = Registry.LocalMachine.OpenSubKey(ClaveArranque, true))
+            using (var hklm = Rutas.Hklm())
+            using (var clave = hklm.OpenSubKey(ClaveArranque, true))
                 clave?.DeleteValue("print-server", false);
         }
 

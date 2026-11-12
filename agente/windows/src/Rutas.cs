@@ -20,8 +20,30 @@ namespace PrintServer
         /// <summary>Este mismo .exe, se llame como se llame tras descargarlo.</summary>
         public static string EsteEjecutable => Assembly.GetExecutingAssembly().Location;
 
-        public static string Programa => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "print-server");
+        /// <summary>
+        /// <c>C:\Program Files\print-server</c> con cualquiera de los dos paquetes.
+        /// Un proceso de 32 bits en una Windows de 64 ve «Program Files (x86)»
+        /// como ProgramFiles: sin esto el x86 y el x64 se instalarían en dos
+        /// carpetas y uno no vería al otro al actualizar.
+        /// </summary>
+        public static string Programa => Path.Combine(ProgramFilesNativo(), "print-server");
+
+        static string ProgramFilesNativo()
+        {
+            var nativo = Environment.GetEnvironmentVariable("ProgramW6432");
+            return string.IsNullOrEmpty(nativo)
+                ? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                : nativo;
+        }
+
+        /// <summary>
+        /// HKLM en su vista nativa: un proceso de 32 bits vería la de 32
+        /// (WOW6432Node), y el arranque del icono quedaría donde el de 64 no lo
+        /// encuentra ni lo quita.
+        /// </summary>
+        public static Microsoft.Win32.RegistryKey Hklm() => Microsoft.Win32.RegistryKey.OpenBaseKey(
+            Microsoft.Win32.RegistryHive.LocalMachine,
+            Environment.Is64BitOperatingSystem ? Microsoft.Win32.RegistryView.Registry64 : Microsoft.Win32.RegistryView.Registry32);
 
         public static string Ventana => Path.Combine(Programa, "print-server.exe");
 
