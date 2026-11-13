@@ -17,7 +17,31 @@ const sistemas = [
   ['macos', 'macOS'],
 ]
 
-const binario = computed(() => descargas.value.find((d) => d.sistema === sistema.value))
+// Windows tiene dos agentes: el de 64 bits (Dart) y el de 32 (C#). Se escoge
+// por el navegador; «bits» queda en null hasta saberlo (o si no se pudo saber).
+const bits = ref(null)
+const otraVersion = ref(false)
+const winArchivo = (b) =>
+  descargas.value.find((d) => d.sistema === 'windows' && d.archivo.includes(b === 32 ? 'x86' : 'x64'))
+const bitsWindows = computed(() => bits.value || 64)
+const winBinario = computed(() => winArchivo(bitsWindows.value) || winArchivo(64) || winArchivo(32))
+const winOtro = computed(() => winArchivo(bitsWindows.value === 32 ? 64 : 32))
+const binario = computed(() =>
+  sistema.value === 'windows' ? winBinario.value : descargas.value.find((d) => d.sistema === sistema.value),
+)
+
+// Bits del WINDOWS (no del navegador): WOW64 = Windows de 64 con navegador de
+// 32; un Windows de 32 no trae Win64/x64 en el userAgent.
+async function detectaBits() {
+  const ua = navigator.userAgent || ''
+  if (!/Windows/i.test(ua)) return
+  try {
+    const v = await navigator.userAgentData?.getHighEntropyValues(['bitness', 'architecture'])
+    if (v?.bitness) return (bits.value = v.bitness === '32' ? 32 : 64)
+    if (v?.architecture === 'arm') return (bits.value = 64)
+  } catch { /* sin client hints: cae al userAgent */ }
+  bits.value = /Win64|WOW64|x64|x86_64|AMD64|ARM64/i.test(ua) ? 64 : 32
+}
 const clave = computed(() => llave.value || 'cpk_tu_llave')
 
 // La llave se crea aquí mismo: el secreto solo se enseña al crearla, así que
@@ -42,6 +66,7 @@ async function creaLlave() {
 const mb = (b) => `${(b / 1024 / 1024).toFixed(1)} MB`
 
 onMounted(async () => {
+  detectaBits()
   try {
     descargas.value = (await api.get('/v1/descargas')).descargas
     dominios.value = (await api.get('/v1/dominios')).dominios
@@ -108,7 +133,28 @@ onMounted(async () => {
           reiniciar, aunque nadie inicie sesión— y con un icono junto al reloj.
         </p>
         <p>
-          <a class="boton" :href="binario.url">Descargar para Windows ({{ mb(binario.bytes) }})</a>
+          <a class="boton" :href="binario.url">
+            Descargar para Windows de {{ bitsWindows }} bits ({{ mb(binario.bytes) }})
+          </a>
+          <template v-if="winOtro">
+            <br />
+            <a
+              href="#"
+              style="font-size: 13px"
+              @click.prevent="otraVersion = !otraVersion"
+            >¿otra versión?</a>
+            <span v-if="otraVersion" style="font-size: 13px">
+              —
+              <a :href="winOtro.url">
+                Windows de {{ bitsWindows === 32 ? 64 : 32 }} bits ({{ mb(winOtro.bytes) }})
+              </a>
+            </span>
+          </template>
+        </p>
+        <p class="apagado" style="font-size: 13px">
+          {{ bits ? 'Detectamos tu navegador y elegimos la versión; ' : '' }}para
+          saber si una PC es de 32 bits: Configuración › Sistema › Acerca de ›
+          «Tipo de sistema».
         </p>
         <p class="apagado" style="font-size: 13px">
           O en PowerShell como administrador, sin tocar nada más:
